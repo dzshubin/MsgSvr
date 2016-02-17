@@ -42,7 +42,7 @@ void DBsvrHandler::handle_ReadInfoById()
 
     // 插入用户信息
     User user;
-    user.set_id(user_info.m_strId);
+    user.set_id(user_info.m_nId);
     user.set_name(user_info.m_strName);
     user.set_nick_name(user_info.m_strNickName);
 
@@ -50,7 +50,7 @@ void DBsvrHandler::handle_ReadInfoById()
 
 
     Msg_login send_info;
-    send_info.m_strId = user_info.m_strId;
+    send_info.m_nId = user_info.m_nId;
 
     CMsg user_login;
     user_login.set_msg_type((int)M2R::UserLogin);
@@ -60,12 +60,12 @@ void DBsvrHandler::handle_ReadInfoById()
 
 
 
-    Msg_update_count update_count;
-    update_count.m_user_count = UserManager::get_instance()->get_user_size();
+    Msg_update_count counts;
+    counts.m_user_count = UserManager::get_instance()->get_user_size();
 
     CMsg update_count;
     update_count.set_msg_type((int)M2L::UpdateMsgSvr);
-    update_count.set_send_data(update_count);
+    update_count.set_send_data(counts);
 
     // 向loginsvr发送本msgsvr的总人数
     send_to_login(update_count);

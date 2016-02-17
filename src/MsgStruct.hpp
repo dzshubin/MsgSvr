@@ -2,6 +2,7 @@
 #define MSGSTRUCT_HPP_INCLUDED
 
 #include <string>
+#include "typeinfo.hpp"
 
 struct Msg_login
 {
@@ -13,10 +14,10 @@ struct Msg_login
     template <typename Archive>
     void serialize(Archive& ar, const unsigned int version)
     {
-        ar & m_strId;
+        ar & m_nId;
     }
 
-    string m_strId;
+    UL64 m_nId;
 };
 
 struct Msg_msgsvr_register
@@ -79,8 +80,8 @@ struct Msg_chat
 
     }
 
-    int m_send_id;
-    int m_recv_id;
+    UL64 m_send_id;
+    UL64 m_recv_id;
     std::string m_content;
 
 
@@ -95,22 +96,6 @@ struct Msg_chat
 
 
 
-struct Msg_init_user
-{
-    Msg_init_user ()
-    {
-
-    }
-
-    string  m_strId;
-
-
-    template <typename Archive>
-    void serialize(Archive& ar, const unsigned int version)
-    {
-        ar & m_strId;
-    }
-};
 
 struct Msg_user_info
 {
@@ -119,14 +104,14 @@ struct Msg_user_info
     {
     }
 
-    string m_strId;
+    UL64 m_nId;
     string m_strName;
     string m_strNickName;
 
     template <typename Archive>
     void serialize(Archive& ar, const unsigned int version)
     {
-        ar & m_strId;
+        ar & m_nId;
         ar & m_strName;
         ar & m_strNickName;
     }

@@ -64,23 +64,21 @@ void ClientHandler::process_msg(int type_)
 void ClientHandler::handle_UserLogin()
 {
 
-    Msg_login ml;
-    deserialization(ml, m_rBuf);
+    Msg_login login_info;
+    deserialization(login_info, m_rBuf);
 
 
-    std::cout << "login id: " << ml.m_strId << std::endl;
+    std::cout << "login id: " << login_info.m_nId << std::endl;
 
 
     // 储存用户链接信息
-    ConnManager::get_instance()->insert_conn(ml.m_strId, m_sock);
+    ConnManager::get_instance()->insert_conn(login_info.m_nId, m_sock);
 
-    // 准备读取用户信息
-    Msg_init_user init_user;
-    init_user.m_strId = ml.m_strId;
+
 
     CMsg read_info;
-    read_info.set_msg_type((int)M2DB::read_info_by_id);
-    read_info.set_send_data(init_user);
+    read_info.set_msg_type(static_cast<int>(M2DB::read_info_by_id));
+    read_info.set_send_data(login_info);
     send_to_db(read_info);
 
 
@@ -91,44 +89,35 @@ void ClientHandler::handle_UserChat()
 {
 
     cout << "Client msg chat!" << endl;
-//    std::cout << "client msg chat!" << std::endl;
-//
-//
-//    Msg_chat msg_chat;
-//    deserialization(msg_chat, m_rBuf);
-//
-//    std::cout << "chat sendid: " << msg_chat.m_send_id
-//              << "chat recvid: " << msg_chat.m_recv_id
-//              << "content: "     << msg_chat.m_content << std::endl;
-//
-//    // 通过id得到context
-//    ClientHandler* p_context = (ClientHandler*)UserManager::get_instance()->get_context_by_id(msg_chat.m_recv_id);
-//    if (p_context == nullptr)
-//    {
-//        std::cout << "Not found p_context! send to router!" << std::endl;
-//        read_head_from_socket();
-//        return;
-//    }
-//
-//
-//    // 通过context得到socket
-//    Conn_t* p_conn = ConnManager::get_instance()->get_conn_by_context(p_context);
-//    if (p_conn == nullptr)
-//    {
-//        std::cout << "Not found p_conn!" << std::endl;
-//        read_head_from_socket();
-//        return;
-//    }
-//
-//    Msg_chat send_to_other;
-//    send_to_other.m_recv_id = msg_chat.m_recv_id;
-//    send_to_other.m_send_id = msg_chat.m_send_id;
-//    send_to_other.m_content = msg_chat.m_content;
-//
-//    CMsg msg;
-//    msg.set_msg_type(1900);
-//    msg.set_send_data(send_to_other);
-//
-//    send_msg(p_conn->m_socket, msg);
+    Msg_chat chat_info;
+    deserialization(chat_info, m_rBuf);
+
+
+    cout << "chat sendid: " << chat_info.m_send_id
+         << "chat recvid: " << chat_info.m_recv_id
+         << "content: "     << chat_info.m_content << endl;
+
+
+    CMsg dispatch_chat;
+    dispatch_chat.set_send_data(chat_info);
+
+    // user in this server??
+    bool bIsFind = UserManager::get_instance()->find_user(chat_info.m_recv_id);
+
+    if (bIsFind)
+    {
+        // get conn
+        auto conn = ConnManager::get_instance()->get_conn(chat_info.m_recv_id);
+
+        dispatch_chat.set_msg_type(1900);
+        send_msg(conn->m_socket, dispatch_chat);
+    }
+    else
+    {
+        // send to router
+        dispatch_chat.set_msg_type((int)M2R::UserChat);
+        send_to_router(dispatch_chat);
+
+    }
 
 }
