@@ -8,6 +8,8 @@
 #include <boost/asio/ip/tcp.hpp>
 
 using namespace boost::asio;
+using namespace std;
+
 
 class ClientHandler: public Handler
 {

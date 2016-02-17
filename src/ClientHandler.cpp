@@ -78,10 +78,10 @@ void ClientHandler::handle_UserLogin()
     Msg_init_user init_user;
     init_user.m_strId = ml.m_strId;
 
-    CMsg read_user_info;
-    read_user_info.set_msg_type((int)M2DB::read_info_by_id);
-    read_user_info.set_send_data(init_user);
-    send_to_db(read_user_info);
+    CMsg read_info;
+    read_info.set_msg_type((int)M2DB::read_info_by_id);
+    read_info.set_send_data(init_user);
+    send_to_db(read_info);
 
 
 }
@@ -89,6 +89,8 @@ void ClientHandler::handle_UserLogin()
 
 void ClientHandler::handle_UserChat()
 {
+
+    cout << "Client msg chat!" << endl;
 //    std::cout << "client msg chat!" << std::endl;
 //
 //

@@ -52,23 +52,23 @@ void DBsvrHandler::handle_ReadInfoById()
     Msg_login send_info;
     send_info.m_strId = user_info.m_strId;
 
-    CMsg user_login_msg;
-    user_login_msg.set_msg_type((int)M2R::UserLogin);
-    user_login_msg.set_send_data(send_info);
+    CMsg user_login;
+    user_login.set_msg_type((int)M2R::UserLogin);
+    user_login.set_send_data(send_info);
     // 向router发送用户上线的消息
-    send_to_router(user_login_msg);
+    send_to_router(user_login);
 
 
 
     Msg_update_count update_count;
     update_count.m_user_count = UserManager::get_instance()->get_user_size();
 
-    CMsg update_count_msg;
-    update_count_msg.set_msg_type((int)M2L::UpdateMsgSvr);
-    update_count_msg.set_send_data(update_count);
+    CMsg update_count;
+    update_count.set_msg_type((int)M2L::UpdateMsgSvr);
+    update_count.set_send_data(update_count);
 
     // 向loginsvr发送本msgsvr的总人数
-    send_to_login(update_count_msg);
+    send_to_login(update_count);
 }
 
 

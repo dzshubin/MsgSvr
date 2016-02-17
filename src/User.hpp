@@ -13,13 +13,13 @@ class User
 public:
     User();
 
-    inline string& get_name ()  { return m_strName; }
+    inline string get_name ()  { return m_strName; }
     inline void    set_name (string name_) { m_strName = name_; }
 
-    inline string& get_id ()  { return m_strId; }
+    inline string get_id ()  { return m_strId; }
     inline void    set_id (string id_) { m_strId = id_; }
 
-    inline string& get_nick_name ()  { return m_strNickName; }
+    inline string get_nick_name ()  { return m_strNickName; }
     inline void    set_nick_name (string nick_name_) { m_strNickName = nick_name_; }
 
 
