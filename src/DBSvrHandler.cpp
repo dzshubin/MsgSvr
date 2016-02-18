@@ -27,7 +27,7 @@ void DBsvrHandler::process_msg(int type_)
 {
     switch (type_)
     {
-    case (int)M2DB::read_info_by_id:
+    case (int)M2D::read_info_by_id:
         handle_ReadInfoById();
         break;
     }

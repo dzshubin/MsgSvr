@@ -77,7 +77,7 @@ void ClientHandler::handle_UserLogin()
 
 
     CMsg read_info;
-    read_info.set_msg_type(static_cast<int>(M2DB::read_info_by_id));
+    read_info.set_msg_type(static_cast<int>(M2D::read_info_by_id));
     read_info.set_send_data(login_info);
     send_to_db(read_info);
 

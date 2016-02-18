@@ -53,12 +53,12 @@ enum class M2L
 };
 
 // 消息svr发给DBSVr
-enum class M2DB
+enum class M2D
 {
     /*
      * 通过用户id读取用户信息
      */
-    read_info_by_id                 = 10000,
+    read_info_by_id                 = 4000,
 };
 
 

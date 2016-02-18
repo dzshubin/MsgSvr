@@ -7,8 +7,7 @@
 
 
 #include "User.hpp"
-#include "typeinfo.hpp"
-//class ClientHandler;
+
 
 class UserManager
 {
@@ -18,7 +17,7 @@ public:
     //void insert_user(ClientHandler* context, int id_);
     void insert_user(User&);
 
-    bool find_user (UL64 id_);
+    bool find_user (uint64_t id_);
     // 获得玩家总数
     int get_user_size();
 

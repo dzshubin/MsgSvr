@@ -2,7 +2,6 @@
 #define MSGSTRUCT_HPP_INCLUDED
 
 #include <string>
-#include "typeinfo.hpp"
 
 struct Msg_login
 {
@@ -17,7 +16,7 @@ struct Msg_login
         ar & m_nId;
     }
 
-    UL64 m_nId;
+    uint64_t m_nId;
 };
 
 struct Msg_msgsvr_register
@@ -74,14 +73,13 @@ struct Msg_allocate_port
 
 struct Msg_chat
 {
-    Msg_chat ()
-        :m_send_id(0), m_recv_id(0)
+    Msg_chat ():m_send_id(0), m_recv_id(0)
     {
 
     }
 
-    UL64 m_send_id;
-    UL64 m_recv_id;
+    uint64_t m_send_id;
+    uint64_t m_recv_id;
     std::string m_content;
 
 
@@ -104,7 +102,7 @@ struct Msg_user_info
     {
     }
 
-    UL64 m_nId;
+    uint64_t m_nId;
     string m_strName;
     string m_strNickName;
 
