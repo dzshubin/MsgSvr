@@ -127,7 +127,7 @@ void Handler::encode_msg(CMsg& msg)
     send_str.clear();
 
     char len[5];
-    sprintf(len, "%4d", msg.get_data_len());
+    sprintf(len, "%4d", msg.send_data_len());
 
     char type[5];
     sprintf(type, "%4d", msg.get_msg_type());
@@ -151,7 +151,7 @@ void Handler::send_msg(ip::tcp::socket& sock_, CMsg& msg)
     cout << "start send msg." << endl;
     auto self = shared_from_this();
     async_write(sock_, boost::asio::buffer(send_str),
-            [this, self] (const err_code& ec, size_t len)
+            [this, self, &sock_] (const err_code& ec, size_t len)
             {
                 if (!ec)
                 {
@@ -159,7 +159,11 @@ void Handler::send_msg(ip::tcp::socket& sock_, CMsg& msg)
                 }
                 else
                 {
-                    cout << "send msg error: " << ec.message() << endl;
+                    cout << "# ERR: exception in " << __FILE__;
+                    cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
+                    cout << "# ERR: " << ec.message() << endl;
+
+                    sock_.close();
                 }
             });
 
@@ -180,7 +184,11 @@ void Handler::send_msg(CMsg& msg)
                     }
                     else
                     {
-                        cout << "send msg error: " << ec.message() << endl;
+                        cout << "# ERR: exception in " << __FILE__;
+                        cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
+                        cout << "# ERR: " << ec.message() << endl;
+
+                        m_sock.close();
                     }
 
                 });
