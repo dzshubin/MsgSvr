@@ -16,7 +16,7 @@ public:
 
 public:
     virtual void start ();
-    virtual void process_msg(int type_);
+    virtual void process_msg(int, string);
 
 public:
     void handle_UserChat();

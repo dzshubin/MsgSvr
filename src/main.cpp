@@ -19,7 +19,7 @@
 
 
 #include <signal.h>
-
+#include <arpa/inet.h>
 
 #include "UserManager.hpp"
 #include "ConnManager.hpp"
@@ -74,36 +74,57 @@ private:
 
 
         string send_str;
+        send_str.resize(sizeof(int32_t));
 
-        char len[5];
-        sprintf(len, "%4d", msg.send_data_len());
 
-        char type[5];
-        sprintf(type, "%4d", msg.get_msg_type());
+        int32_t type = msg.get_msg_type();
+        int32_t be_type = ::htonl(type);
+        cout << "size: " << send_str.size() << endl;
 
-        send_str.append(len);
-        send_str.append(type);
-        send_str.append(msg.get_send_data());
+        send_str.append(reinterpret_cast<char*>(&be_type), sizeof(be_type));
+        cout << "size: " << send_str.size() << endl;
+        send_str.append(msg.get_send_data().c_str(), msg.send_data_len() + 1);
+        cout << "size: " << send_str.size() << endl;
+
+
+        int32_t len = msg.send_data_len() + 1 + sizeof(int32_t);
+        int32_t be_len = ::htonl(len);
+
+        std::copy(reinterpret_cast<char*>(&be_len),
+                  reinterpret_cast<char*>(&be_len) + sizeof (int32_t),
+                  send_str.begin());
+
+
+
+
+        std::cout << "msg size: " << msg.send_data_len() + 1 << std::endl;
+        std::cout << "str size: " << send_str.size() << std::endl;
+
         write(m_RouterSock, buffer(send_str));
 
 
-        std::cout << "msg size: " << msg.get_send_data().size() << std::endl;
-        std::cout << "str size: " << send_str.size() << std::endl;
         std::cout << "read port!" <<std::endl;
-        char head_info[8];
+        char head_info[4];
         size_t st = read(m_RouterSock, buffer(head_info));
 
-        string read_len(head_info, 4);
-        int read_size = std::stoi(read_len);
+
+        int32_t pack_len;
+        std::copy(head_info, head_info+sizeof(int32_t), reinterpret_cast<char*>(&pack_len));
+        int32_t be_pack_len = ::ntohl(pack_len);
+
+        cout << "data len： " << be_pack_len << endl;
 
         boost::asio::streambuf rf;
-        read(m_RouterSock, rf, transfer_exactly(read_size));
+        read(m_RouterSock, rf, transfer_exactly(be_pack_len));
+
 
         // read port
         std::ostringstream os;
         os << &rf;
 
         std::string data(os.str());
+        data = data.substr(sizeof(int32_t));
+
         std::istringstream is_stream(data);
         boost::archive::text_iarchive archive(is_stream);
         archive & msg_port;

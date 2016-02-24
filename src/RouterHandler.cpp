@@ -32,7 +32,7 @@ void RouterHandler::start()
     read_head_from_socket();
 }
 
-void RouterHandler::process_msg(int type_)
+void RouterHandler::process_msg(int type_, string /**/)
 {
     std::cout << "roiter process msg!" << std::endl;
 

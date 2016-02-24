@@ -34,7 +34,7 @@ void ClientHandler::start()
     read_head_from_socket();
 }
 
-void ClientHandler::process_msg(int type_)
+void ClientHandler::process_msg(int type_, string /**/)
 {
     std::cout << "start process client msg!" << std::endl;
     std::cout << "msg type: " <<type_<< std::endl;

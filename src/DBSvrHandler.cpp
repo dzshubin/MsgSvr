@@ -23,7 +23,7 @@ void DBsvrHandler::start()
     read_head_from_socket();
 }
 
-void DBsvrHandler::process_msg(int type_)
+void DBsvrHandler::process_msg(int type_, string /**/)
 {
     switch (type_)
     {

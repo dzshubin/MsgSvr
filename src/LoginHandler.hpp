@@ -8,13 +8,15 @@
 #include "CMsg.h"
 #include "UserManager.hpp"
 
+using namespace std;
+
 class LoginHandler : public Handler
 {
 public:
     LoginHandler (ip::tcp::socket,  int);
 
     virtual void start() override;
-    virtual void process_msg(int) override;
+    virtual void process_msg(int, string) override;
 
 private:
     int m_port;

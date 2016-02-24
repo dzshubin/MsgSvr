@@ -29,7 +29,7 @@ void LoginHandler::start()
     read_head_from_socket();
 }
 
-void LoginHandler::process_msg(int /**/)
+void LoginHandler::process_msg(int /**/, string /**/)
 {
 
 }
