@@ -5,21 +5,23 @@
 #include <boost/asio/ip/tcp.hpp>
 
 #include "Handler.hpp"
-#include "CMsg.h"
-#include "UserManager.hpp"
+#include "CMsg.hpp"
 
 using namespace std;
+using namespace boost::asio;
 
-class LoginHandler : public Handler
+class LoginHandler: public Handler
 {
 public:
-    LoginHandler (ip::tcp::socket,  int);
+    LoginHandler (ip::tcp::socket);
 
     virtual void start() override;
     virtual void process_msg(int, string) override;
 
+
 private:
-    int m_port;
+    void register_msgsvr();
+
 };
 
 

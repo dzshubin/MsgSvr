@@ -14,7 +14,7 @@ public:
     virtual void process_msg(int, string) override;
 
 private:
-    void handle_ReadInfoById();
+    void handle_fetch_info(string );
 
 };
 

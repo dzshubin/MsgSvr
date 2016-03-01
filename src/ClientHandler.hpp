@@ -21,8 +21,8 @@ public:
     virtual void process_msg(int, string);
 
 private:
-    void handle_UserLogin();
-    void handle_UserChat();
+    void handle_UserLogin(string);
+    void handle_UserChat(string);
 };
 
 #endif // CLIENTHANDLER_HPP_INCLUDED
