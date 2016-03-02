@@ -87,36 +87,43 @@ void ClientHandler::handle_client_login(string buf_)
 void ClientHandler::handle_chat(string buf_)
 {
 
-//    cout << "Client msg chat!" << endl;
-//    Msg_chat chat_info;
-//    deserialization(chat_info, m_rBuf);
-//
-//
-//    cout << "chat sendid: " << chat_info.m_send_id
-//         << "chat recvid: " << chat_info.m_recv_id
-//         << "content: "     << chat_info.m_content << endl;
-//
-//
-//    CMsg dispatch_chat;
-//    dispatch_chat.set_send_data(chat_info);
-//
-//    // user in this server??
-//    bool bIsFind = UserManager::get_instance()->find_user(chat_info.m_recv_id);
-//
-//    if (bIsFind)
-//    {
-//        // get conn
-//        auto conn = ConnManager::get_instance()->get_conn(chat_info.m_recv_id);
-//
-//        dispatch_chat.set_msg_type(1900);
-//        send(conn->m_socket, dispatch_chat);
-//    }
-//    else
-//    {
-//        // send to router
-//        dispatch_chat.set_msg_type((int)M2R::UserChat);
-//        send_to_router(dispatch_chat);
-//
-//    }
+    cout << "Client msg chat!" << endl;
+
+    Msg_chat chat_info;
+    deserialization(chat_info, buf_);
+
+    cout << "chat sendid: " << chat_info.m_send_id
+         << "chat recvid: " << chat_info.m_recv_id
+         << "content: "     << chat_info.m_content << endl;
+
+
+    CMsg packet;
+    packet.serialization_data_Asio(chat_info);
+
+
+    // 玩家在服务器里？
+    bool result = UserManager::get_instance()->find_user(chat_info.m_recv_id);
+    if (result)
+    {
+        // 转发
+        Conn_t* pConn = ConnManager::get_instance()->get_conn(chat_info.m_recv_id);
+
+        if (pConn != nullptr)
+        {
+            packet.set_msg_type(1900);
+            send(packet, pConn->socket());
+        }
+        else
+        {
+            //  玩家连接不存在！
+            cout << "error: " << __FUNCTION__ << ", 玩家连接不存在！" << endl;
+        }
+    }
+    else
+    {
+        packet.set_msg_type(static_cast<int>(M2R::DISPATCH_CHAT));
+        // 发送给routersvr
+        send_to_router(packet);
+    }
 
 }
