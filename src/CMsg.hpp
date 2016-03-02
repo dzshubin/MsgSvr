@@ -15,9 +15,18 @@ public:
     CMsg(const CMsg& other);
     CMsg& operator=(const CMsg& other);
 
+public:
+
+    const string& get_send_data() const;
+    int send_data_len();
+
     void set_msg_type (int);
     int get_msg_type();
 
+    // 重置到默认值
+    void clear();
+
+public:
     template <class T >
     void serialization_data_Asio(const T& t)
     {
@@ -39,15 +48,10 @@ public:
         cout << "serialize result: " << result << endl;
     }
 
-    const string& get_send_data() const;
-    int send_data_len();
-
-
 
 
 private:
     int m_type;
-    int m_data_len;
     std::string m_send_data;
 
 };
