@@ -3,6 +3,7 @@
 
 
 #include <vector>
+#include <map>
 #include <set>
 #include <string>
 #include <boost/asio/ip/tcp.hpp>
@@ -15,12 +16,10 @@ using namespace boost::asio;
 struct Conn_t
 {
 
-    uint64_t m_nId;
     ip::tcp::socket& m_socket;
 
 
-    Conn_t (uint64_t id_, ip::tcp::socket& socket_)
-        :m_nId(id_), m_socket(socket_)
+    Conn_t (ip::tcp::socket& socket_): m_socket(socket_)
     {
     }
 
@@ -43,7 +42,7 @@ public:
     void stop_all();
 
 private:
-    vector<Conn_t> m_conns;
+    map<uint64_t, Conn_t> m_ConnMap;
 };
 
 #endif // CONNMANAGER_HPP_INCLUDED

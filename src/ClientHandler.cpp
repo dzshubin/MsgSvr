@@ -43,12 +43,12 @@ void ClientHandler::process_msg(int type_, string buf_)
     {
     case (int)C2M::LOGIN:
         std::cout << "client login!" << std::endl;
-        handle_UserLogin(buf_);
+        handle_client_login(buf_);
         break;
 
     case (int)C2M::CHAT:
         std::cout << "client chat!" << std::endl;
-        handle_UserChat(buf_);
+        handle_chat(buf_);
         break;
     }
 }
@@ -61,31 +61,30 @@ void ClientHandler::process_msg(int type_, string buf_)
  *
  */
 
-void ClientHandler::handle_UserLogin(string buf_)
+void ClientHandler::handle_client_login(string buf_)
 {
 
-//    Msg_login login_info;
-//    deserialization(login_info, m_rBuf);
+    Msg_login login_info;
+    deserialization(login_info, buf_);
+
+
+    std::cout << "login id: " << login_info.m_nId << std::endl;
+
+
+    // 储存用户链接信息
+    ConnManager::get_instance()->insert_conn(login_info.m_nId, socket());
+
 //
-//
-//    std::cout << "login id: " << login_info.m_nId << std::endl;
-//
-//
-//    // 储存用户链接信息
-//    ConnManager::get_instance()->insert_conn(login_info.m_nId, m_sock);
-//
-//
-//
-//    CMsg read_info;
-//    read_info.set_msg_type(static_cast<int>(M2D::read_info_by_id));
-//    read_info.set_send_data(login_info);
-//    send_to_db(read_info);
+    CMsg packet;
+    packet.set_msg_type(static_cast<int>(M2D::READ_INFO));
+    packet.serialization_data_Asio(login_info);
+    send_to_db(packet);
 
 
 }
 
 
-void ClientHandler::handle_UserChat(string buf_)
+void ClientHandler::handle_chat(string buf_)
 {
 
 //    cout << "Client msg chat!" << endl;

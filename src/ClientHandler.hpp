@@ -17,12 +17,12 @@ public:
     ClientHandler(ip::tcp::socket);
 
 public:
-    virtual void start();
-    virtual void process_msg(int, string);
+    virtual void start() override;
+    virtual void process_msg(int, string) override;
 
 private:
-    void handle_UserLogin(string);
-    void handle_UserChat(string);
+    void handle_client_login(string);
+    void handle_chat(string);
 };
 
 #endif // CLIENTHANDLER_HPP_INCLUDED
