@@ -20,14 +20,14 @@ DBsvrHandler::DBsvrHandler(ip::tcp::socket sock_)
 void DBsvrHandler::start()
 {
     g_dbsvr_handler = this;
-    read_head_from_socket();
+    read_head();
 }
 
 void DBsvrHandler::process_msg(int type_, string buf_)
 {
     switch (type_)
     {
-    case (int)M2D::read_info_by_id:
+    case (int)M2D::READ_INFO:
         handle_fetch_info(buf_);
         break;
     }
@@ -78,5 +78,5 @@ void DBsvrHandler::handle_fetch_info(string buf_)
 void send_to_db (CMsg& msg)
 {
     if (g_dbsvr_handler)
-        g_dbsvr_handler->send_msg(msg);
+        g_dbsvr_handler->send(msg);
 }

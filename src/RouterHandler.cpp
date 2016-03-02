@@ -32,7 +32,7 @@ void RouterHandler::start()
     g_router_handler = this;
 
     allocate_port();
-    read_head_from_socket();
+    read_head();
 }
 
 
@@ -44,10 +44,10 @@ void RouterHandler::allocate_port()
 
 
     CMsg packet;
-    packet.set_msg_type((int)M2R::AllocatePort);
+    packet.set_msg_type((int)M2R::ALLOCATE_PORT);
     packet.serialization_data_Asio(msg_port);
 
-    send_msg(packet);
+    send(packet);
 }
 
 void RouterHandler::process_msg(int type_, string buf_)
@@ -56,11 +56,11 @@ void RouterHandler::process_msg(int type_, string buf_)
 
     switch (type_)
     {
-    case (int)M2R::UserChat:
+    case (int)M2R::DISPATCH_CHAT:
         std::cout << "router dispatch chat msg" << std::endl;
         handle_user_chat(buf_);
 
-    case (int)M2R::AllocatePort:
+    case (int)M2R::ALLOCATE_PORT:
         handle_allocate_port(buf_);
         break;
     }
@@ -104,7 +104,7 @@ void RouterHandler::handle_user_chat(string buf_)
 //    if (p_context == nullptr)
 //    {
 //        std::cout << "router:Not found p_context! send to router!" << std::endl;
-//        read_head_from_socket();
+//        read_head();
 //        return;
 //    }
 //
@@ -114,7 +114,7 @@ void RouterHandler::handle_user_chat(string buf_)
 //    if (p_conn == nullptr)
 //    {
 //        std::cout << "router: Not found p_conn!" << std::endl;
-//        read_head_from_socket();
+//        read_head();
 //        return;
 //    }
 //
@@ -131,6 +131,6 @@ void RouterHandler::handle_user_chat(string buf_)
 void send_to_router (CMsg& msg)
 {
     if (g_router_handler)
-        g_router_handler->send_msg(msg);
+        g_router_handler->send(msg);
 }
 

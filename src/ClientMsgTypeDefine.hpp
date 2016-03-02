@@ -48,14 +48,14 @@ enum class M2R
 enum class R2M
 {
     RECV_CHAT                   = 3000,
-}
+};
 
 
 // 消息svr发给登陆SVr
 enum class M2L
 {
-    Register                        = 7000,
-    UpdateMsgSvr                    = 7001,     // 更新当前消息服务器总人数
+    REGISTER                            = 7000,
+    UPDATE                              = 7001,     // 更新当前消息服务器总人数
 };
 
 // 消息svr发给DBSVr
@@ -64,7 +64,7 @@ enum class M2D
     /*
      * 通过用户id读取用户信息
      */
-    read_info_by_id                 = 4000,
+    READ_INFO                 = 4000,
 };
 
 

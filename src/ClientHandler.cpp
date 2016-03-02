@@ -31,7 +31,7 @@ void ClientHandler::start()
     //std::cout << "Insert Conn info!" << std::endl;
 
     // 开始从客户端读取消息
-    read_head_from_socket();
+    read_head();
 }
 
 void ClientHandler::process_msg(int type_, string buf_)
@@ -41,12 +41,12 @@ void ClientHandler::process_msg(int type_, string buf_)
 
     switch (type_)
     {
-    case (int)C2L::UserLogin:
+    case (int)C2M::LOGIN:
         std::cout << "client login!" << std::endl;
         handle_UserLogin(buf_);
         break;
 
-    case (int)C2L::UserChat:
+    case (int)C2M::CHAT:
         std::cout << "client chat!" << std::endl;
         handle_UserChat(buf_);
         break;
@@ -110,7 +110,7 @@ void ClientHandler::handle_UserChat(string buf_)
 //        auto conn = ConnManager::get_instance()->get_conn(chat_info.m_recv_id);
 //
 //        dispatch_chat.set_msg_type(1900);
-//        send_msg(conn->m_socket, dispatch_chat);
+//        send(conn->m_socket, dispatch_chat);
 //    }
 //    else
 //    {
