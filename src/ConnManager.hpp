@@ -23,6 +23,12 @@ struct Conn_t
     {
     }
 
+
+    ip::tcp::socket& socket()
+    {
+        return m_socket;
+    }
+
 };
 
 
@@ -35,14 +41,14 @@ public:
     static ConnManager* get_instance();
 
 public:
-    void insert_conn(uint64_t, ip::tcp::socket& );
-    Conn_t* get_conn (uint64_t);
+    void insert_conn(int64_t, ip::tcp::socket& );
+    Conn_t* get_conn (int64_t);
 
 
     void stop_all();
 
 private:
-    map<uint64_t, Conn_t> m_ConnMap;
+    map<int64_t, Conn_t> m_ConnMap;
 };
 
 #endif // CONNMANAGER_HPP_INCLUDED
