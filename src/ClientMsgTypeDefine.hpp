@@ -23,15 +23,15 @@
  * @parm    客户端请求的消息参数_: 参数意思
  * @return  服务器返回的消息参数 : 参数意思
  */
-enum class C2L
+enum class C2M
 {
     /*
      * 玩家登陆
      * @parm       id_ : 玩家id
      * @retruen    res : 登陆结果 0-成功  1-失败
      */
-    UserLogin                       = 1000,
-    UserChat                        = 1001,
+    LOGIN                = 1000,
+    CHAT                 = 1001,
 };
 
 
@@ -39,10 +39,16 @@ enum class C2L
 // 消息svr发给路由SVr
 enum class M2R
 {
-    UserChat                        = 2000,
-    UserLogin                       = 2001,
-    AllocatePort                    = 2003,
+    DISPATCH_CHAT                        = 2000,
+    LOGIN                                = 2001,
+    ALLOCATE_PORT                        = 2003,
 };
+
+// msgsvr --> routersvr
+enum class R2M
+{
+    RECV_CHAT                   = 3000,
+}
 
 
 // 消息svr发给登陆SVr
