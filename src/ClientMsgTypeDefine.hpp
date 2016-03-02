@@ -36,7 +36,7 @@ enum class C2M
 
 
 
-// 消息svr发给路由SVr
+// msgsvr <--> routersvr
 enum class M2R
 {
     DISPATCH_CHAT                        = 2000,
@@ -44,7 +44,7 @@ enum class M2R
     ALLOCATE_PORT                        = 2003,
 };
 
-// msgsvr --> routersvr
+// routersvr --> msgsvr
 enum class R2M
 {
     RECV_CHAT                   = 3000,

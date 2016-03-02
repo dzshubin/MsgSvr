@@ -16,7 +16,7 @@ struct Msg_login
         ar & m_nId;
     }
 
-    uint64_t m_nId;
+    int64_t m_nId;
 };
 
 struct Msg_msgsvr_register
@@ -78,8 +78,8 @@ struct Msg_chat
 
     }
 
-    uint64_t m_send_id;
-    uint64_t m_recv_id;
+    int64_t m_send_id;
+    int64_t m_recv_id;
     std::string m_content;
 
 
@@ -102,7 +102,7 @@ struct Msg_user_info
     {
     }
 
-    uint64_t m_nId;
+    int64_t m_nId;
     string m_strName;
     string m_strNickName;
 
