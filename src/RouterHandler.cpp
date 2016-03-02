@@ -87,44 +87,41 @@ void RouterHandler::handle_allocate_port(string buf_)
 
 void RouterHandler::handle_user_chat(string buf_)
 {
-//    std::cout << "router msg chat!" << std::endl;
-//
-//
-//    Msg_chat recv_chat;
-//    deserialization(recv_chat, m_rBuf);
-//
-//
-//    std::cout << "chat sendid: " << recv_chat.m_send_id
-//              << "chat recvid: " << recv_chat.m_recv_id
-//              << "content: "     << recv_chat.m_content << std::endl;
+    std::cout << "recv router msg chat!" << std::endl;
 
+    Msg_chat recv_chat;
+    deserialization(recv_chat, buf_);
 
-//    // 通过id得到context
-//    ClientHandler* p_context = (ClientHandler*)UserManager::get_instance()->get_context_by_id(recv_chat.m_recv_id);
-//    if (p_context == nullptr)
-//    {
-//        std::cout << "router:Not found p_context! send to router!" << std::endl;
-//        read_head();
-//        return;
-//    }
-//
-//
-//    // 通过context得到socket
-//    Conn_t* p_conn = ConnManager::get_instance()->get_conn_by_context(p_context);
-//    if (p_conn == nullptr)
-//    {
-//        std::cout << "router: Not found p_conn!" << std::endl;
-//        read_head();
-//        return;
-//    }
-//
-//
-//    CMsg msg;
-//    msg.set_msg_type(1900);
-//    msg.set_send_data(recv_chat);
-//
-//
-//    send_msg(p_conn->m_socket, msg);
+    std::cout << "chat sendid: " << recv_chat.m_send_id
+              << "chat recvid: " << recv_chat.m_recv_id
+              << "content: "     << recv_chat.m_content << std::endl;
+
+    // 玩家在这个服务器？
+    bool result = UserManager::get_instance()->find_user(recv_chat.m_recv_id);
+    if (result)
+    {
+        CMsg packet;
+        packet.set_msg_type(1900);
+        packet.serialization_data_Asio(recv_chat);
+
+        // 找到链接
+        Conn_t* pConn = ConnManager::get_instance()->get_conn(recv_chat.m_recv_id);
+
+        if (pConn != nullptr)
+        {
+            send(packet, pConn->socket());
+        }
+        else
+        {
+            cout << "error: " << __FUNCTION__ <<  " ,玩家连接不存在！" << endl;
+        }
+
+    }
+    else
+    {
+        cout << "error: " << __FUNCTION__ << " 玩家不存在" << endl;
+    }
+
 }
 
 
