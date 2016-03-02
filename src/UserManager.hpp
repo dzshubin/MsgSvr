@@ -14,12 +14,14 @@ class UserManager
 public:
     static UserManager* get_instance();
 
-    //void insert_user(ClientHandler* context, int id_);
-    void insert_user(User&);
+    // 添加用户
+    void insert_user(User);
 
-    bool find_user (uint64_t id_);
+    // 玩家是否存在
+    bool find_user (int64_t id_);
+
     // 获得玩家总数
-    int get_user_size();
+    int size();
 
 private:
     UserManager () {};
