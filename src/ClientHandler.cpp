@@ -64,22 +64,70 @@ void ClientHandler::process_msg(int type_, string buf_)
 void ClientHandler::handle_client_login(string buf_)
 {
 
-    Msg_login login_info;
-    deserialization(login_info, buf_);
+
+    GOOGLE_PROTOBUF_VERIFY_VERSION;
+    using namespace google::protobuf;
+
+    cout << "buf: " << buf_.c_str() << "size：" << buf_.size()<<endl;
+
+    // namelen
+    int32_t name_len = AsInt32(buf_.c_str());
+    cout << "name_len: " << name_len << endl;
+
+    // type name
+    const char* chr_name = buf_.c_str() + sizeof(int32_t);
+    string type_name = string(chr_name, name_len);
+    cout << "type_name: " << type_name << endl;
+
+    shared_ptr<google::protobuf::Message> p_ms = CreateMessage(type_name);
+
+    if (p_ms == nullptr)
+    {
+        cout << "fail!" << endl;
+        return;
+    }
+
+    // 反序列化
+    int size = buf_.size();
+    p_ms->ParseFromArray(buf_.c_str() + sizeof(int32_t) + name_len,
+                       size - sizeof(int32_t)-name_len);
 
 
-    std::cout << "login id: " << login_info.m_nId << std::endl;
+    const Reflection* rf = p_ms->GetReflection();
+    const FieldDescriptor* f_id = p_ms->GetDescriptor()->FindFieldByName("id");
+    const FieldDescriptor* f_passwd = p_ms->GetDescriptor()->FindFieldByName("passwd");
 
 
-    // 储存用户链接信息
-    ConnManager::get_instance()->insert_conn(login_info.m_nId, socket());
+    int64_t id;
+    string passwd;
 
-//
+    try
+    {
+        id = rf->GetInt64(*p_ms, f_id);
+        cout << id  << endl;
+
+        passwd = rf->GetString(*p_ms, f_passwd);
+        cout << passwd << endl;
+    }
+    catch (exception& e)
+    {
+        cout << "# ERR: exception in " << __FILE__;
+        cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
+        cout << "# ERR: " << e.what() << endl;
+    }
+
+    ConnManager::get_instance()->insert_conn(id, m_sock);
+
+    Msg_login_id login_id;
+    login_id.m_nId = id;
+
     CMsg packet;
     packet.set_msg_type(static_cast<int>(M2D::READ_INFO));
-    packet.serialization_data_Asio(login_info);
+    packet.serialization_data_Asio(Msg_login_id);
     send_to_db(packet);
 
+
+    google::protobuf::ShutdownProtobufLibrary();
 
 }
 
