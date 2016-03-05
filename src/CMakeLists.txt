@@ -47,11 +47,23 @@ set (Used_libs ${Boost_system_lib} ${Boost_serialization_lib} ${Boost_signals_li
 set (Pb_lib	libprotobuf.a)
 set (Pb_used_libs ${Pb_lib})
 
+# 设置pb生成的文件路径
+set (Pb_root_path	../pb)
+set (Pb_file_path	${Pb_root_path}/include/)
+
+include_directories(${Pb_file_path})
+
+
 # 当前目前下的所有源文件
 file(GLOB_RECURSE HEAD_FILES *h *hpp)
 
+# pb 头文件
+file(GLOB_RECURSE PB_HEAD_FILES "../pb/include/*.h")
+
+
 aux_source_directory (. DIR_SRCS)
-ADD_EXECUTABLE(${PROJECT_NAME} ${DIR_SRCS} ${HEAD_FILES})
+aux_source_directory (${Pb_file_path} DIR_SRCS)
+ADD_EXECUTABLE(${PROJECT_NAME} ${DIR_SRCS} ${HEAD_FILES} ${PB_HEAD_FILES})
 
 
 #
