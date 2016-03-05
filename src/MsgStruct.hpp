@@ -3,9 +3,9 @@
 
 #include <string>
 
-struct Msg_login
+struct Msg_login_id
 {
-    Msg_login ()
+    Msg_login_id ()
     {
 
     }
