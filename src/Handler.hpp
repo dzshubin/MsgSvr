@@ -34,12 +34,6 @@ public:
     void read_head();
     void read_body(int len);
 
-private:
-
-    void encode(CMsg&);
-    void decode();
-    int32_t AsInt32 (const char* buf);
-
 
 public:
     void send(CMsg&, ip::tcp::socket& sock_);
@@ -62,8 +56,12 @@ protected:
         cout << "buf size: " <<buf_.size() <<endl;
     }
 
-
 protected:
+
+    void encode(CMsg&);
+    void decode();
+    int32_t AsInt32 (const char* buf);
+
     shared_ptr<google::protobuf::Message> CreateMessage(const string&);
 
 

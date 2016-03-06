@@ -210,6 +210,9 @@ void Handler::send(CMsg& msg)
                 cout << "# ERR: exception in " << __FILE__;
                 cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
                 cout << "# ERR: " << ec.message() << endl;
+
+                // remove from connmanager
+
                 m_sock.close();
             }
         });

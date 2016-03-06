@@ -64,7 +64,7 @@ enum class M2D
     /*
      * 通过用户id读取用户信息
      */
-    READ_INFO                 = 4000,
+    READ_INFO                 = 5000,
 };
 
 

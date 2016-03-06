@@ -123,7 +123,7 @@ void ClientHandler::handle_client_login(string buf_)
 
     CMsg packet;
     packet.set_msg_type(static_cast<int>(M2D::READ_INFO));
-    packet.serialization_data_Asio(Msg_login_id);
+    packet.serialization_data_Asio(login_id);
     send_to_db(packet);
 
 

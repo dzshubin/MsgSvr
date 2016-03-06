@@ -42,12 +42,14 @@ public:
 
 public:
     void insert_conn(int64_t, ip::tcp::socket& );
+    bool remove_conn(ip::tcp::socket&);
     Conn_t* get_conn (int64_t);
 
 
     void stop_all();
 
 private:
+    // map<用户id, 连接信息>
     map<int64_t, Conn_t> m_ConnMap;
 };
 

@@ -40,6 +40,9 @@ void DBsvrHandler::handle_fetch_info(string buf_)
     deserialization(user_info, buf_);
 
 
+    cout << "name: " << user_info.m_strName << endl;
+    cout << "nick name: " << user_info.m_strNickName << endl;
+
     // 插入用户信息
     User user;
     user.set_id(user_info.m_nId);
@@ -50,7 +53,7 @@ void DBsvrHandler::handle_fetch_info(string buf_)
 
 
     // 向router发送用户上线的消息
-    Msg_login user_login;
+    Msg_login_id user_login;
     user_login.m_nId = user_info.m_nId;
 
     CMsg packet;
