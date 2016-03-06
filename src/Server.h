@@ -47,16 +47,21 @@ private:
     // 绑定监听端口
     void bind_and_connect();
 
+    // 链接DBsvr
+    void connect_db();
+
 private:
     io_service  m_io_service;
 
-    // socket for client
+    // 监听客户端
     ip::tcp::socket   m_sockClient;
-    //
+    // 链接router
     ip::tcp::socket   m_sockRouter;
 
     ip::tcp::socket   m_sockLogin;
-    //
+
+    ip::tcp::socket   m_sockDBSvr;
+
     ip::tcp::acceptor m_accClient;
     // 关闭程序的信息集
     signal_set m_signals;

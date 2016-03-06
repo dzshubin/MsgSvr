@@ -2,7 +2,7 @@
 #include "RouterHandler.hpp"
 #include "ClientHandler.hpp"
 #include "LoginHandler.hpp"
-
+#include "DBSvrHandler.hpp"
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/asio/deadline_timer.hpp>
@@ -17,7 +17,8 @@ Server* g = nullptr;
 Server::Server()
   :m_io_service(), m_sockClient(m_io_service),
    m_sockRouter(m_io_service), m_sockLogin(m_io_service),
-   m_accClient(m_io_service), m_signals(m_io_service)
+   m_sockDBSvr(m_io_service), m_accClient(m_io_service),
+   m_signals(m_io_service)
 {
     //ctor
     await_stop();
@@ -46,6 +47,7 @@ bool Server::connect_router_after()
 {
     bind_and_connect();
     connect_login();
+    connect_db();
     return true;
 }
 
@@ -107,6 +109,29 @@ void Server::connect_router()
             }
         });
 }
+
+
+void Server::connect_db()
+{
+    ip::tcp::endpoint ep(ip::address::from_string("127.0.0.1"), 12000);
+    m_sockDBSvr.async_connect(ep, [this] (const err_code& ec)
+        {
+            if (!ec)
+            {
+                cout << "connected DbSvr!" << endl;
+                make_shared<DBsvrHandler>(move(m_sockDBSvr))->start();
+            }
+            else
+            {
+                cout << "error. try connect router..." << endl;
+                boost::asio::deadline_timer t(m_io_service, boost::posix_time::seconds(10));
+                t.wait();
+                connect_db();
+
+            }
+        });
+}
+
 
 void Server::connect_login()
 {
