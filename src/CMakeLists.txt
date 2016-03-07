@@ -11,22 +11,20 @@ message (STATUS "compiler is ${CMAKE_CXX_COMPILER_ID}" )
 message (STATUS "source dir: ${PROJECT_SOURCE_DIR} ")
 message (STATUS "current dir: ${CMAKE_CURRENT_SOURCE_DIR}")
 
-ADD_DEFINITIONS (-std=c++0x -g -Wall )
-
-if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
-    execute_process(COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
-    if (NOT (GCC_VERSION VERSION_GREATER 4.7 OR GCC_VERSION VERSION_EQUAL 4.7))
-        message(FATAL_ERROR "${PROJECT_NAME} requires g++ 4.7 or greater.")
-    endif ()
-    elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
-
-    else ()
-        message(FATAL_ERROR "Your C++ compiler does not support C++11.")
-    endif ()
+# åˆ¤æ–­æ˜¯å¦æ”¯æŒC++11
+include(CheckCXXCompilerFlag)
+CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
+CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
+if(COMPILER_SUPPORTS_CXX11)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+elseif(COMPILER_SUPPORTS_CXX0X)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+else()
+        message(STATUS "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
+endif()
 
 
-# ÉèÖÃboost¿âÂ·¾¶
+# è®¾ç½®booståº“è·¯å¾„
 set (Boost_root_path    ../boost)
 set (Boost_head_path    ${Boost_root_path}/include)
 set (Boost_lib_path	    ${Boost_root_path}/lib)
@@ -47,17 +45,17 @@ set (Used_libs ${Boost_system_lib} ${Boost_serialization_lib} ${Boost_signals_li
 set (Pb_lib	libprotobuf.a)
 set (Pb_used_libs ${Pb_lib})
 
-# ÉèÖÃpbÉú³ÉµÄÎÄ¼şÂ·¾¶
+# è®¾ç½®pbç”Ÿæˆçš„æ–‡ä»¶è·¯å¾„
 set (Pb_root_path	../pb)
 set (Pb_file_path	${Pb_root_path}/include/)
 
 include_directories(${Pb_file_path})
 
 
-# µ±Ç°Ä¿Ç°ÏÂµÄËùÓĞÔ´ÎÄ¼ş
+# å½“å‰ç›®å‰ä¸‹çš„æ‰€æœ‰æºæ–‡ä»¶
 file(GLOB_RECURSE HEAD_FILES *h *hpp)
 
-# pb Í·ÎÄ¼ş
+# pb å¤´æ–‡ä»¶
 file(GLOB_RECURSE PB_HEAD_FILES "../pb/include/*.h")
 
 
