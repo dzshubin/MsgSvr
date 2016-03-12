@@ -100,21 +100,38 @@ shared_ptr<google::protobuf::Message> Handler::CreateMessage(const string& type_
 {
     using namespace google::protobuf;
 
-    const Descriptor* dr = DescriptorPool::generated_pool()->FindMessageTypeByName(type_name);
-    if (dr == nullptr)
+
+    try
     {
+        const DescriptorPool* pDescPool = DescriptorPool::generated_pool();
+
+        if(pDescPool == nullptr)
+        {
+            return nullptr;
+        }
+
+        const Descriptor* dr = pDescPool->FindMessageTypeByName(type_name);
+        if (dr == nullptr)
+        {
+            return nullptr;
+        }
+
+        const Message* proto = MessageFactory::generated_factory()->GetPrototype(dr);
+
+        if (proto == nullptr)
+        {
+            return nullptr;
+        }
+
+
+        shared_ptr<Message> p_message(proto->New());
+        return p_message;
+    }
+    catch (exception e)
+    {
+        cout << "error." << e.what() << endl;
         return nullptr;
     }
-
-    const Message* proto = MessageFactory::generated_factory()->GetPrototype(dr);
-
-    if (proto == nullptr)
-    {
-        return nullptr;
-    }
-
-    shared_ptr<Message> p_message(proto->New());
-    return p_message;
 }
 
 

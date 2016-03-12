@@ -127,7 +127,7 @@ void ClientHandler::handle_client_login(string buf_)
     send_to_db(packet);
 
 
-    google::protobuf::ShutdownProtobufLibrary();
+    //google::protobuf::ShutdownProtobufLibrary();
 
 }
 
