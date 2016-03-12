@@ -46,9 +46,15 @@ if(Boost_FOUND)
 endif()
 
 
-# set used protobuf lib
-set (Pb_lib	libprotobuf.a)
-set (Pb_used_libs ${Pb_lib})
+#find protobuf
+find_package(Protobuf REQUIRED)
+if(PROTOBUF_FOUND)
+    message(STATUS "protobuf include dirs: " ${PROTOBUF_INCLUDE_DIRS})
+    message(STATUS "protobuf lib dirs: " ${PROTOBUF_LIBRARY})
+
+    include_directories(${PROTOBUF_INCLUDE_DIRS})
+endif()
+
 
 
 aux_source_directory (. DIR_SRCS)
@@ -61,8 +67,7 @@ file(GLOB_RECURSE PB_GEN_HEAD_FILES ../protobuf_gen/include/*.h ../protobuf_gen/
 ADD_EXECUTABLE(${PROJECT_NAME} ${DIR_SRCS} ${PB_GEN_SRCS} ${HEAD_FILES} ${PB_GEN_HEAD_FILES})
 
 
-#
-TARGET_LINK_LIBRARIES(${PROJECT_NAME} ${Pb_used_libs} )
+TARGET_LINK_LIBRARIES(${PROJECT_NAME} ${PROTOBUF_LIBRARIES} )
 TARGET_LINK_LIBRARIES(${PROJECT_NAME} ${Boost_LIBRARIES})
 TARGET_LINK_LIBRARIES(${PROJECT_NAME} -lpthread)
 
