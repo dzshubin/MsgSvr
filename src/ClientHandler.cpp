@@ -10,6 +10,8 @@
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 
+#include "chat.pb.h"
+
 ClientHandler::ClientHandler(ip::tcp::socket usersock_)
     :Handler(std::move(usersock_))
 {
@@ -26,9 +28,6 @@ ClientHandler::ClientHandler(ip::tcp::socket usersock_)
 
 void ClientHandler::start()
 {
-    // 插入客户端连接信息
-//ConnManager::get_instance()->insert_conn(this, m_sock);
-    //std::cout << "Insert Conn info!" << std::endl;
 
     // 开始从客户端读取消息
     read_head();
@@ -146,8 +145,6 @@ void ClientHandler::handle_chat(string buf_)
 
 
     CMsg packet;
-    packet.serialization_data_Asio(chat_info);
-
 
     // 玩家在服务器里？
     bool result = UserManager::get_instance()->find_user(chat_info.m_recv_id);
@@ -158,7 +155,14 @@ void ClientHandler::handle_chat(string buf_)
 
         if (pConn != nullptr)
         {
-            packet.set_msg_type(1900);
+            IM::ChatPkt chatPkt;
+            chatPkt.set_send_id(chat_info.m_send_id);
+            chatPkt.set_recv_id(chat_info.m_recv_id);
+            chatPkt.set_content(chat_info.m_content);
+
+
+            packet.set_msg_type(static_cast<int>(C2M::CHAT));
+            packet.serialization_data_protobuf(chatPkt);
             send(packet, pConn->socket());
         }
         else
@@ -170,6 +174,7 @@ void ClientHandler::handle_chat(string buf_)
     else
     {
         packet.set_msg_type(static_cast<int>(M2R::DISPATCH_CHAT));
+        packet.serialization_data_Asio(chat_info);
         // 发送给routersvr
         send_to_router(packet);
     }
