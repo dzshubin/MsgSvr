@@ -12,7 +12,7 @@ message (STATUS "source dir: ${PROJECT_SOURCE_DIR} ")
 message (STATUS "current dir: ${CMAKE_CURRENT_SOURCE_DIR}")
 
 if (NOT win32)
-    add_definitions(-std=c++11)
+    add_definitions(-std=c++11 -g)
 endif()
 
 

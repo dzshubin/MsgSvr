@@ -161,7 +161,7 @@ void Handler::encode(CMsg& msg)
               send_str.begin());
 
 
-    cout << "send data len: " << msg.send_data_len() + 1 << endl;
+    cout << "data len: " << len << endl;
     cout << "send str size: " << send_str.size() << endl;
 }
 
