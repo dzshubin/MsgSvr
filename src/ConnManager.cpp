@@ -15,33 +15,25 @@ ConnManager* ConnManager::get_instance()
 
 }
 
-void ConnManager::insert_conn(int64_t id_, ip::tcp::socket& socket_)
+void ConnManager::insert(connection_ptr conn_)
 {
-    m_ConnMap.insert(make_pair(id_, Conn_t(socket_)));
+    m_Conns.insert(conn_);
 }
 
 
-bool ConnManager::remove_conn(ip::tcp::socket& sock_)
+void ConnManager::remove(connection_ptr conn_)
 {
-//    auto it = find_if(m_ConnMap.begin(), m_ConnMap.end(),
-//        [&] (Conn_t& conn_)
-//        {
-//           return conn_.is_open();
-//        });
-//
-//    return it == m_ConnMap.end() ? true : false;
-    return false;
+    m_Conns.erase(conn_);
 }
 
 
-Conn_t* ConnManager::get_conn(int64_t id_)
+void ConnManager::insert_conn_user(int conn_id_, int64_t user_id_)
 {
-    auto it = m_ConnMap.find(id_);
-
-    return it != m_ConnMap.end() ? &(it->second) : nullptr;
+    m_mapUserConn.insert(make_pair(conn_id_, user_id_));
 }
 
-void ConnManager::stop_all()
+int64_t ConnManager::get_user_id(int conn_id_)
 {
-
+    auto it = m_mapUserConn.find(conn_id_);
+    return it == m_mapUserConn.end() ? 0 : it->second;
 }

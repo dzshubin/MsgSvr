@@ -1,11 +1,19 @@
 #include "Server.h"
-#include "RouterHandler.hpp"
-#include "ClientHandler.hpp"
-#include "LoginHandler.hpp"
-#include "DBSvrHandler.hpp"
+#include "RouterConnection.hpp"
+#include "ClientConnection.hpp"
+#include "LoginConnection.hpp"
+#include "DbsvrConnection.hpp"
+#include "ConnManager.hpp"
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/asio/deadline_timer.hpp>
+#include <boost/bind.hpp>
+#include <boost/asio/connect.hpp>
+
+
+#include <vector>
+#include <thread>
+#include <algorithm>
 Server* g = nullptr;
 
 
@@ -15,9 +23,8 @@ Server* g = nullptr;
  */
 
 Server::Server()
-  :m_io_service(), m_sockClient(m_io_service),
-   m_sockRouter(m_io_service), m_sockLogin(m_io_service),
-   m_sockDBSvr(m_io_service), m_accClient(m_io_service),
+  :m_io_service(),
+   m_accClient(m_io_service),
    m_signals(m_io_service)
 {
     //ctor
@@ -38,7 +45,26 @@ bool Server::initialization()
 
 void Server::run ()
 {
-    m_io_service.run();
+    // 线程池大小
+    std::size_t threads_pool_size = 4;
+
+
+    vector<shared_ptr<std::thread>> threads;
+    for(int i = 0; i < threads_pool_size; i++)
+    {
+        shared_ptr<std::thread> thread(new std::thread(
+            boost::bind(&io_service::run, &m_io_service)));
+        threads.push_back(thread);
+    }
+
+
+    // 等待所有线程结束
+    for_each(threads.begin(), threads.end(),
+        [] (shared_ptr<std::thread> ptr)
+        {
+            ptr->join();
+        });
+
     connect_router();
 }
 
@@ -91,14 +117,21 @@ void Server::bind_and_connect()
 
 void Server::connect_router()
 {
-    //
-    ip::tcp::endpoint ep(ip::address::from_string("127.0.0.1"), 10000);
-    m_sockRouter.async_connect(ep, [this] (const err_code& ec)
+
+    ip::tcp::resolver resolver(m_io_service);
+    ip::tcp::resolver::iterator it = resolver.resolve( {"127.0.0.1", "10000"} );
+
+
+    m_router_conn.reset(new RouterConnection(m_io_service));
+    async_connect(m_router_conn->socket(), it,
+        [this] (const err_code& ec, ip::tcp::resolver::iterator it)
         {
             if (!ec)
             {
                 cout << "connected router!" << endl;
-                make_shared<RouterHandler>(move(m_sockRouter))->start();
+                ConnManager::get_instance()->insert(m_router_conn);
+
+                m_router_conn->on_connect();
             }
             else
             {
@@ -113,17 +146,24 @@ void Server::connect_router()
 
 void Server::connect_db()
 {
-    ip::tcp::endpoint ep(ip::address::from_string("127.0.0.1"), 12000);
-    m_sockDBSvr.async_connect(ep, [this] (const err_code& ec)
+    ip::tcp::resolver resolver(m_io_service);
+    ip::tcp::resolver::iterator it = resolver.resolve( {"127.0.0.1", "12000"} );
+
+    m_db_conn.reset(new DBsvrConnection(m_io_service));
+    async_connect(m_db_conn->socket(), it,
+        [this] (const err_code& ec, ip::tcp::resolver::iterator it_)
         {
             if (!ec)
             {
                 cout << "connected DbSvr!" << endl;
-                make_shared<DBsvrHandler>(move(m_sockDBSvr))->start();
+                ConnManager::get_instance()->insert(m_db_conn);
+
+                m_db_conn->on_connect();
             }
+
             else
             {
-                cout << "error. try connect router..." << endl;
+                cout << "error. try connect db..." << endl;
                 boost::asio::deadline_timer t(m_io_service, boost::posix_time::seconds(10));
                 t.wait();
                 connect_db();
@@ -135,13 +175,20 @@ void Server::connect_db()
 
 void Server::connect_login()
 {
-    ip::tcp::endpoint ep(ip::address::from_string("127.0.0.1"), 9800);
-    m_sockLogin.async_connect(ep, [this] (const err_code& ec)
+    ip::tcp::resolver resolver(m_io_service);
+    ip::tcp::resolver::iterator it = resolver.resolve( {"127.0.0.1", "9800"} );
+
+
+    m_login_conn.reset(new LoginConnection(m_io_service));
+    async_connect(m_login_conn->socket(), it,
+        [this] (const err_code& ec, ip::tcp::resolver::iterator it_)
         {
             if (!ec)
             {
                 cout << "connected login!" << endl;
-                make_shared<LoginHandler>(move(m_sockLogin))->start();
+                ConnManager::get_instance()->insert(m_login_conn);
+
+                m_login_conn->on_connect();
             }
             else
             {
@@ -157,18 +204,20 @@ void Server::connect_login()
 void Server::wait_accept_client()
 {
     std::cout << "start accept!" << std::endl;
-    m_accClient.async_accept(m_sockClient, [this] (const err_code& ec)
+    m_client_conn.reset(new ClientConnection(m_io_service));
+
+    m_accClient.async_accept(m_client_conn->socket(), [this] (const err_code& ec)
         {
             if (!ec)
             {
-                cout << "client address: " << m_sockClient.remote_endpoint().address().to_string()
-                     << "client port: "    << m_sockClient.remote_endpoint().port() << endl;
+                cout << "client address: " << m_client_conn->socket().remote_endpoint().address().to_string()
+                     << "client port: "    << m_client_conn->socket().remote_endpoint().port() << endl;
 
-                make_shared<ClientHandler>(move(m_sockClient))->start();
+                ConnManager::get_instance()->insert(m_login_conn);
+                m_client_conn->on_connect();
             }
             else
             {
-
                 cout << "error" << endl;
             }
             wait_accept_client();

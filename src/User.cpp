@@ -2,7 +2,7 @@
 
 
 
-User::User()
+ImUser::ImUser()
 {
 
 }

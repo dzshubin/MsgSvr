@@ -1,29 +1,30 @@
 
 
-#include "DBSvrHandler.hpp"
-#include "RouterHandler.hpp"
-#include "LoginHandler.hpp"
+#include "DbsvrConnection.hpp"
+#include "RouterConnection.hpp"
+#include "LoginConnection.hpp"
 #include "ClientMsgTypeDefine.hpp"
 #include "MsgStruct.hpp"
 #include "UserManager.hpp"
+#include "ConnManager.hpp"
 #include "User.hpp"
 
-static DBsvrHandler* g_dbsvr_handler = nullptr;
+static DBsvrConnection* g_dbsvr_handler = nullptr;
 
-DBsvrHandler::DBsvrHandler(ip::tcp::socket sock_)
-    :Handler(std::move(sock_))
+DBsvrConnection::DBsvrConnection(io_service& io_)
+  :Connection(io_)
 {
 
 }
 
 
-void DBsvrHandler::start()
+void DBsvrConnection::start()
 {
     g_dbsvr_handler = this;
     read_head();
 }
 
-void DBsvrHandler::process_msg(int type_, string buf_)
+void DBsvrConnection::process_msg(int type_, string buf_)
 {
     switch (type_)
     {
@@ -34,7 +35,7 @@ void DBsvrHandler::process_msg(int type_, string buf_)
 }
 
 
-void DBsvrHandler::handle_fetch_info(string buf_)
+void DBsvrConnection::handle_fetch_info(string buf_)
 {
     Msg_user_info user_info;
     deserialization(user_info, buf_);
@@ -43,13 +44,25 @@ void DBsvrHandler::handle_fetch_info(string buf_)
     cout << "name: " << user_info.m_strName << endl;
     cout << "nick name: " << user_info.m_strNickName << endl;
 
-    // 插入用户信息
-    User user;
-    user.set_id(user_info.m_nId);
-    user.set_name(user_info.m_strName);
-    user.set_nick_name(user_info.m_strNickName);
 
-    UserManager::get_instance()->insert_user(user);
+    ImUser* pImUser = UserManager::get_instance()->get_user(user_info.m_nId);
+    if (pImUser == nullptr)
+    {
+        //error
+        cout << "error! pImuser is null! user_id: "<< user_info.m_nId << endl;
+        return;
+    }
+
+    pImUser->set_id(user_info.m_nId);
+    pImUser->set_name(user_info.m_strName);
+    pImUser->set_nick_name(user_info.m_strNickName);
+
+
+    // set Connid--> userid
+    int conn_id = pImUser->get_conn()->get_id();
+    ConnManager::get_instance()->insert_conn_user(conn_id, user_info.m_nId);
+
+
 
 
     // 向router发送用户上线的消息

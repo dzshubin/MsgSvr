@@ -1,20 +1,18 @@
-#ifndef ROUTERHANDLER_HPP_INCLUDED
-#define ROUTERHANDLER_HPP_INCLUDED
+#ifndef RouterConnection_HPP_INCLUDED
+#define RouterConnection_HPP_INCLUDED
 
 #include <boost/asio/ip/tcp.hpp>
 
-#include "Handler.hpp"
-#include "ConnManager.hpp"
-#include "UserManager.hpp"
 #include "CMsg.hpp"
+#include "Connection.hpp"
 
 using namespace std;
 using namespace boost::asio;
 
-class RouterHandler:public Handler
+class RouterConnection: public Connection
 {
 public:
-    RouterHandler (ip::tcp::socket);
+    RouterConnection (io_service&);
 
 public:
     virtual void start () override;
@@ -33,4 +31,4 @@ private:
 
 void send_to_router(CMsg&);
 
-#endif // ROUTERHANDLER_HPP_INCLUDED
+#endif // RouterConnection_HPP_INCLUDED

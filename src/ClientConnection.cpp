@@ -1,19 +1,24 @@
 
-#include "ClientHandler.hpp"
-#include "LoginHandler.hpp"
+#include "ClientConnection.hpp"
+#include "LoginConnection.hpp"
 #include "MsgStruct.hpp"
-#include "DBSvrHandler.hpp"
+#include "DbsvrConnection.hpp"
 #include "ClientMsgTypeDefine.hpp"
-#include "RouterHandler.hpp"
+#include "RouterConnection.hpp"
+#include "User.hpp"
+#include "UserManager.hpp"
+
+#include "chat.pb.h"
+
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 
-#include "chat.pb.h"
 
-ClientHandler::ClientHandler(ip::tcp::socket usersock_)
-    :Handler(std::move(usersock_))
+
+ClientConnection::ClientConnection(io_service& io_)
+  :Connection(io_)
 {
 
 
@@ -23,17 +28,18 @@ ClientHandler::ClientHandler(ip::tcp::socket usersock_)
 /**********************************************
  *
  *
- *
  */
 
-void ClientHandler::start()
+void ClientConnection::start()
 {
 
     // 开始从客户端读取消息
     read_head();
 }
 
-void ClientHandler::process_msg(int type_, string buf_)
+
+
+void ClientConnection::process_msg(int type_, string buf_)
 {
     std::cout << "start process client msg!" << std::endl;
     std::cout << "msg type: " <<type_<< std::endl;
@@ -60,7 +66,7 @@ void ClientHandler::process_msg(int type_, string buf_)
  *
  */
 
-void ClientHandler::handle_client_login(string buf_)
+void ClientConnection::handle_client_login(string buf_)
 {
 
 
@@ -115,7 +121,18 @@ void ClientHandler::handle_client_login(string buf_)
         cout << "# ERR: " << e.what() << endl;
     }
 
-    ConnManager::get_instance()->insert_conn(id, m_sock);
+
+    ImUser *pImUser = UserManager::get_instance()->get_user(id);
+    if (pImUser == nullptr)
+    {
+        pImUser = new ImUser;
+        pImUser->set_id(id);
+        pImUser->set_conn(shared_from_this());
+
+        UserManager::get_instance()->insert(pImUser);
+    }
+
+
 
     Msg_login_id login_id;
     login_id.m_nId = id;
@@ -128,7 +145,7 @@ void ClientHandler::handle_client_login(string buf_)
 }
 
 
-void ClientHandler::handle_chat(string buf_)
+void ClientConnection::handle_chat(string buf_)
 {
 
     cout << "Client msg chat!" << endl;
@@ -193,13 +210,13 @@ void ClientHandler::handle_chat(string buf_)
     CMsg packet;
 
     // 玩家在服务器里？
-    bool result = UserManager::get_instance()->find_user(recv_id);
-    if (result)
+    ImUser* pImUser = UserManager::get_instance()->get_user(recv_id);
+    if (pImUser)
     {
         // 转发
-        Conn_t* pConn = ConnManager::get_instance()->get_conn(recv_id);
+        connection_ptr conn = pImUser->get_conn();
 
-        if (pConn != nullptr)
+        if (conn != nullptr)
         {
             IM::ChatPkt chatPkt;
             chatPkt.set_send_id(send_id);
@@ -209,7 +226,7 @@ void ClientHandler::handle_chat(string buf_)
 
             packet.set_msg_type(static_cast<int>(C2M::CHAT));
             packet.serialization_data_protobuf(chatPkt);
-            send(packet, pConn->socket());
+            send(packet, conn->socket());
         }
         else
         {

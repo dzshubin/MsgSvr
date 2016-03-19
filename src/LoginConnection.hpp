@@ -1,19 +1,19 @@
-#ifndef LOGINHANDLER_HPP_INCLUDED
-#define LOGINHANDLER_HPP_INCLUDED
+#ifndef LoginConnection_HPP_INCLUDED
+#define LoginConnection_HPP_INCLUDED
 #include <string>
 
 #include <boost/asio/ip/tcp.hpp>
 
-#include "Handler.hpp"
+#include "Connection.hpp"
 #include "CMsg.hpp"
 
 using namespace std;
 using namespace boost::asio;
 
-class LoginHandler: public Handler
+class LoginConnection: public Connection
 {
 public:
-    LoginHandler (ip::tcp::socket);
+    LoginConnection (io_service&);
 
     virtual void start() override;
     virtual void process_msg(int, string) override;
@@ -27,5 +27,5 @@ private:
 
 void send_to_login(CMsg&);
 
-#endif // LOGINHANDLER_HPP_INCLUDED
+#endif // LoginConnection_HPP_INCLUDED
 

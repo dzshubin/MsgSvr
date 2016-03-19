@@ -1,9 +1,7 @@
-#ifndef CLIENTHANDLER_HPP_INCLUDED
-#define CLIENTHANDLER_HPP_INCLUDED
+#ifndef ClientConnection_HPP_INCLUDED
+#define ClientConnection_HPP_INCLUDED
 
-#include "Handler.hpp"
-#include "ConnManager.hpp"
-#include "UserManager.hpp"
+#include "Connection.hpp"
 
 #include <boost/asio/ip/tcp.hpp>
 
@@ -11,10 +9,10 @@ using namespace boost::asio;
 using namespace std;
 
 
-class ClientHandler: public Handler
+class ClientConnection: public Connection
 {
 public:
-    ClientHandler(ip::tcp::socket);
+    ClientConnection(io_service&);
 
 public:
     virtual void start() override;
@@ -25,4 +23,4 @@ private:
     void handle_chat(string);
 };
 
-#endif // CLIENTHANDLER_HPP_INCLUDED
+#endif // ClientConnection_HPP_INCLUDED

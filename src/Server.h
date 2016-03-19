@@ -5,16 +5,20 @@
 #include <boost/asio/io_service.hpp>
 #include <boost/asio/signal_set.hpp>
 #include <boost/asio/ip/tcp.hpp>
+#include <boost/noncopyable.hpp>
+
 #include <signal.h>
+
+#include "Connection.hpp"
 
 using namespace std;
 using namespace boost::asio;
 
-
-using err_code = boost::system::error_code;
-
-class Server
+class Server: private boost::noncopyable
 {
+public:
+    typedef boost::system::error_code err_code;
+
 public:
     Server();
 
@@ -53,14 +57,12 @@ private:
 private:
     io_service  m_io_service;
 
-    // 监听客户端
-    ip::tcp::socket   m_sockClient;
-    // 链接router
-    ip::tcp::socket   m_sockRouter;
+    // 新的连接
+    connection_ptr m_client_conn;
+    connection_ptr m_router_conn;
+    connection_ptr m_login_conn;
+    connection_ptr m_db_conn;
 
-    ip::tcp::socket   m_sockLogin;
-
-    ip::tcp::socket   m_sockDBSvr;
 
     ip::tcp::acceptor m_accClient;
     // 关闭程序的信息集
@@ -73,5 +75,4 @@ private:
 
 
 extern Server *g;
-
 #endif // SERVER_H

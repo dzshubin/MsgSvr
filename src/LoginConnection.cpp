@@ -1,10 +1,10 @@
-#include "LoginHandler.hpp"
+#include "LoginConnection.hpp"
 #include "ClientMsgTypeDefine.hpp"
 #include "Server.h"
 #include "MsgStruct.hpp"
 #include  <boost/archive/binary_oarchive.hpp>
 
-static LoginHandler* g_login_handler = nullptr;
+static LoginConnection* g_login_handler = nullptr;
 
 
 /****************************************
@@ -12,14 +12,14 @@ static LoginHandler* g_login_handler = nullptr;
  *
  */
 
-LoginHandler::LoginHandler(ip::tcp::socket sock_)
-    :Handler(std::move(sock_))
+LoginConnection::LoginConnection(io_service& io_)
+  :Connection(io_)
 {
 
 }
 
 
-void LoginHandler::start()
+void LoginConnection::start()
 {
     g_login_handler = this;
 
@@ -29,7 +29,7 @@ void LoginHandler::start()
 
 
 
-void LoginHandler::process_msg(int /**/, string /**/)
+void LoginConnection::process_msg(int /**/, string /**/)
 {
 
 }
@@ -50,7 +50,7 @@ void send_to_login (CMsg& msg)
  *
  */
 
-void LoginHandler::register_msgsvr()
+void LoginConnection::register_msgsvr()
 {
 
     Msg_msgsvr_register msgsvr;

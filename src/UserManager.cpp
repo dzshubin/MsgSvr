@@ -8,23 +8,39 @@ UserManager* UserManager::get_instance()
 }
 
 
-void UserManager::insert_user(User u)
+void UserManager::insert(ImUser* pUser)
 {
-    m_users.push_back(u);
+    m_users.insert(pUser);
+    cout << "now users size: " << m_users.size() << endl;
 }
+
+void UserManager::remove(ImUser* pUser)
+{
+    m_users.erase(pUser);
+    cout << "now users size: " << m_users.size() << endl;
+}
+
 
 int UserManager::size()
 {
     return m_users.size();
 }
 
-bool UserManager::find_user(int64_t id_)
-{
-    auto it = find_if(m_users.cbegin(), m_users.cend(),
-                [&id_] (const User& user)
-                {
-                    return (user.get_id()) == id_;
-                });
 
-    return it != m_users.end() ? true : false;
+ImUser* UserManager::get_user(int64_t id_)
+{
+    auto it = find_if(m_users.begin(), m_users.end(),
+        [&] (ImUser* user_)
+        {
+            return user_->get_id() == id_;
+        });
+
+    if (it == m_users.end())
+    {
+        return nullptr;
+    }
+    else
+    {
+        return *it;
+    }
 }

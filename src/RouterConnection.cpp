@@ -1,12 +1,17 @@
-#include "RouterHandler.hpp"
+#include "RouterConnection.hpp"
 #include "MsgStruct.hpp"
 #include "ClientMsgTypeDefine.hpp"
 #include "Server.h"
+#include "UserManager.hpp"
+#include "User.hpp"
+
+
+
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 
 
-static RouterHandler* g_router_handler = nullptr;
+static RouterConnection* g_router_handler = nullptr;
 
 /**********************************************
  *
@@ -14,8 +19,8 @@ static RouterHandler* g_router_handler = nullptr;
  *
  */
 
-RouterHandler::RouterHandler(ip::tcp::socket sock_)
-  :Handler(std::move(sock_))
+RouterConnection::RouterConnection(io_service& io_)
+  :Connection(io_)
 {
 
 }
@@ -27,7 +32,7 @@ RouterHandler::RouterHandler(ip::tcp::socket sock_)
  *
  */
 
-void RouterHandler::start()
+void RouterConnection::start()
 {
     g_router_handler = this;
 
@@ -36,7 +41,7 @@ void RouterHandler::start()
 }
 
 
-void RouterHandler::allocate_port()
+void RouterConnection::allocate_port()
 {
     // 向router注册,申请账号
     Msg_allocate_port msg_port;
@@ -50,7 +55,7 @@ void RouterHandler::allocate_port()
     send(packet);
 }
 
-void RouterHandler::process_msg(int type_, string buf_)
+void RouterConnection::process_msg(int type_, string buf_)
 {
     std::cout << "roiter process msg!" << std::endl;
 
@@ -74,7 +79,7 @@ void RouterHandler::process_msg(int type_, string buf_)
  *
  */
 
-void RouterHandler::handle_allocate_port(string buf_)
+void RouterConnection::handle_allocate_port(string buf_)
 {
     // 获得分配端口, 开始监听
     Msg_allocate_port port;
@@ -85,7 +90,7 @@ void RouterHandler::handle_allocate_port(string buf_)
     g->connect_router_after();
 }
 
-void RouterHandler::handle_user_chat(string buf_)
+void RouterConnection::handle_user_chat(string buf_)
 {
     std::cout << "recv router msg chat!" << std::endl;
 
@@ -97,19 +102,19 @@ void RouterHandler::handle_user_chat(string buf_)
               << "content: "     << recv_chat.m_content << std::endl;
 
     // 玩家在这个服务器？
-    bool result = UserManager::get_instance()->find_user(recv_chat.m_recv_id);
-    if (result)
+    ImUser* pImUser = UserManager::get_instance()->get_user(recv_chat.m_recv_id);
+    if (pImUser != nullptr)
     {
         CMsg packet;
         packet.set_msg_type(1900);
         packet.serialization_data_Asio(recv_chat);
 
         // 找到链接
-        Conn_t* pConn = ConnManager::get_instance()->get_conn(recv_chat.m_recv_id);
+        connection_ptr conn = pImUser->get_conn();
 
-        if (pConn != nullptr)
+        if (conn != nullptr)
         {
-            send(packet, pConn->socket());
+            send(packet, conn->socket());
         }
         else
         {

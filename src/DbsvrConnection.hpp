@@ -2,13 +2,13 @@
 #define DBSVRHANDLER_HPP_INCLUDED
 
 
-#include "Handler.hpp"
+#include "Connection.hpp"
 
 
-class DBsvrHandler: public Handler
+class DBsvrConnection: public Connection
 {
 public:
-    DBsvrHandler (ip::tcp::socket);
+    DBsvrConnection (io_service& io_);
 
     virtual void start() override;
     virtual void process_msg(int, string) override;

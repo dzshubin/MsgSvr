@@ -1,7 +1,7 @@
 #ifndef USERMANAGER_HPP_INCLUDED
 #define USERMANAGER_HPP_INCLUDED
 
-#include <vector>
+#include <set>
 #include <iostream>
 #include <algorithm>
 
@@ -15,10 +15,12 @@ public:
     static UserManager* get_instance();
 
     // 添加用户
-    void insert_user(User);
+    void insert(ImUser*);
 
-    // 玩家是否存在
-    bool find_user (int64_t id_);
+    void remove(ImUser*);
+
+    // 通过玩家id获得玩家信息
+    ImUser* get_user(int64_t id_);
 
     // 获得玩家总数
     int size();
@@ -27,7 +29,7 @@ private:
     UserManager () {};
 
 private:
-    std::vector<User> m_users;
+    std::set<ImUser*> m_users;
 };
 
 

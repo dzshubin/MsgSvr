@@ -8,49 +8,35 @@
 #include <string>
 #include <boost/asio/ip/tcp.hpp>
 
+#include "Connection.hpp"
+
 
 using namespace std;
 using namespace boost::asio;
 
 
-struct Conn_t
-{
-
-    ip::tcp::socket& m_socket;
-
-
-    Conn_t (ip::tcp::socket& socket_): m_socket(socket_)
-    {
-    }
-
-
-    ip::tcp::socket& socket()
-    {
-        return m_socket;
-    }
-
-};
-
-
-
 class ConnManager
 {
-private:
-    ConnManager ();
+    ConnManager();
+
 public:
     static ConnManager* get_instance();
 
 public:
-    void insert_conn(int64_t, ip::tcp::socket& );
-    bool remove_conn(ip::tcp::socket&);
-    Conn_t* get_conn (int64_t);
+    void insert(connection_ptr);
+    void remove(connection_ptr);
 
+    // 插入connid-->userid
+    void insert_conn_user(int, int64_t);
+    int64_t get_user_id(int);
 
-    void stop_all();
 
 private:
-    // map<用户id, 连接信息>
-    map<int64_t, Conn_t> m_ConnMap;
+    // map<连接标志, 连接>
+    set<connection_ptr> m_Conns;
+
+    // map<用户id, 连接标志>
+    map<int, int64_t> m_mapUserConn;
 };
 
 #endif // CONNMANAGER_HPP_INCLUDED
