@@ -56,8 +56,9 @@ public:
     void read_body(int len);
 
     // 发送数据包到指定 socket
-    void send(CMsg&, ip::tcp::socket& sock_);
+    virtual void send(CMsg&, ip::tcp::socket& sock_);
     void send(CMsg&);
+
 
 
 public:

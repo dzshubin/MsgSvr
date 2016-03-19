@@ -64,8 +64,6 @@ void Server::run ()
         {
             ptr->join();
         });
-
-    connect_router();
 }
 
 
