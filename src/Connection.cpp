@@ -2,11 +2,11 @@
 #include "Connection.hpp"
 #include <arpa/inet.h>
 
-#include "ConnManager.hpp"
-#include "UserManager.hpp"
+
 
 #include <boost/bind.hpp>
 
+static int g_count = 1;
 
 /**********************************************
  *
@@ -17,7 +17,6 @@
 Connection::Connection(io_service& io_service_)
   :m_sock(io_service_), m_strand(io_service_)
 {
-
 }
 
 
@@ -91,6 +90,19 @@ void Connection::send(CMsg& msg)
 }
 
 
+void Connection::send_and_shutdown(CMsg& pkt, ip::tcp::socket& sock_)
+{
+    encode(pkt);
+    auto self = shared_from_this();
+
+    async_write(sock_, boost::asio::buffer(m_strSendData),
+        m_strand.wrap(
+            boost::bind(&Connection::handle_write_done_shutdown, shared_from_this(),
+                      boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred,
+                      ref(sock_))
+        ));
+}
+
 
 ip::tcp::socket& Connection::socket()
 {
@@ -108,32 +120,11 @@ void Connection::stop()
 
 
 
-void Connection::stop_after()
-{
-    // 从连接器中删除连接
-    ConnManager::get_instance()->remove(shared_from_this());
-
-    int user_id = ConnManager::get_instance()->get_user_id(m_ConnId);
-    ImUser *pImUser = UserManager::get_instance()->get_user(user_id);
-    if (pImUser)
-    {
-        // 删除用户
-        UserManager::get_instance()->remove(pImUser);
-    }
-    else
-    {
-
-    }
-}
-
-
 
 void Connection::on_connect()
 {
     // 分配连接标志
-    m_ConnId = 1;
-
-    ConnManager::get_instance()->insert(shared_from_this());
+    m_ConnId = (g_count++) % 32000;
     start();
 }
 
@@ -319,4 +310,26 @@ void Connection::handle_write(const err_code& ec, std::size_t byte_trans)
     }
 }
 
+
+void Connection::handle_write_done_shutdown(const err_code& ec, std::size_t byte_trans, ip::tcp::socket& sock_)
+{
+
+    if (!ec)
+    {
+        cout << "sended data len: " << byte_trans << endl;
+    }
+
+    else
+    {
+        cout << "# ERR: exception in " << __FILE__;
+        cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
+        cout << "# ERR: " << ec.message() << endl;
+    }
+
+    if (sock_.is_open())
+    {
+        sock_.close();
+    }
+    stop_after();
+}
 

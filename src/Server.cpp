@@ -3,7 +3,6 @@
 #include "ClientConnection.hpp"
 #include "LoginConnection.hpp"
 #include "DbsvrConnection.hpp"
-#include "ConnManager.hpp"
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/asio/deadline_timer.hpp>
@@ -127,7 +126,6 @@ void Server::connect_router()
             if (!ec)
             {
                 cout << "connected router!" << endl;
-                ConnManager::get_instance()->insert(m_router_conn);
 
                 m_router_conn->on_connect();
             }
@@ -154,7 +152,7 @@ void Server::connect_db()
             if (!ec)
             {
                 cout << "connected DbSvr!" << endl;
-                ConnManager::get_instance()->insert(m_db_conn);
+
 
                 m_db_conn->on_connect();
             }
@@ -184,7 +182,7 @@ void Server::connect_login()
             if (!ec)
             {
                 cout << "connected login!" << endl;
-                ConnManager::get_instance()->insert(m_login_conn);
+                //ConnManager::get_instance()->insert(m_login_conn);
 
                 m_login_conn->on_connect();
             }
@@ -211,7 +209,7 @@ void Server::wait_accept_client()
                 cout << "client address: " << m_client_conn->socket().remote_endpoint().address().to_string()
                      << "client port: "    << m_client_conn->socket().remote_endpoint().port() << endl;
 
-                ConnManager::get_instance()->insert(m_login_conn);
+
                 m_client_conn->on_connect();
             }
             else

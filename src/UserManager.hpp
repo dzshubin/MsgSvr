@@ -18,7 +18,8 @@ public:
     void insert(ImUser*);
 
     void remove(ImUser*);
-
+    // 删除与指定connid的玩家
+    bool remove(int conn_id);
     // 通过玩家id获得玩家信息
     ImUser* get_user(int64_t id_);
 

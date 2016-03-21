@@ -56,9 +56,10 @@ public:
     void read_body(int len);
 
     // 发送数据包到指定 socket
-    virtual void send(CMsg&, ip::tcp::socket& sock_);
+    void send(CMsg&, ip::tcp::socket& sock_);
     void send(CMsg&);
 
+    void send_and_shutdown(CMsg&, ip::tcp::socket&);
 
 
 public:
@@ -84,7 +85,8 @@ protected:
     // 根据类名构建protobuf消息体
     // 返回nullptr如果没有该类名信息
     shared_ptr<google::protobuf::Message> CreateMessage(const string&);
-
+    // 关闭socket之后做的事情
+    virtual void stop_after() = 0;
 
 
 private:
@@ -92,14 +94,7 @@ private:
     void handle_read_body(const err_code&, std::size_t);
 
     void handle_write(const err_code&, std::size_t);
-
-
-
-private:
-    // 关闭socket之后做的事情
-    void stop_after();
-
-
+    void handle_write_done_shutdown(const err_code&, std::size_t, ip::tcp::socket&);
 
 private:
     // 连接

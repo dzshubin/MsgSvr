@@ -39,6 +39,12 @@ void ClientConnection::start()
 
 
 
+void ClientConnection::stop_after()
+{
+    bool result = UserManager::get_instance()->remove(get_id());
+}
+
+
 void ClientConnection::process_msg(int type_, string buf_)
 {
     std::cout << "start process client msg!" << std::endl;
@@ -249,3 +255,7 @@ void ClientConnection::handle_chat(string buf_)
     }
 
 }
+
+
+
+

@@ -6,7 +6,6 @@
 #include "ClientMsgTypeDefine.hpp"
 #include "MsgStruct.hpp"
 #include "UserManager.hpp"
-#include "ConnManager.hpp"
 #include "User.hpp"
 
 static DBsvrConnection* g_dbsvr_handler = nullptr;
@@ -22,6 +21,13 @@ void DBsvrConnection::start()
 {
     g_dbsvr_handler = this;
     read_head();
+}
+
+
+void DBsvrConnection::stop_after()
+{
+
+
 }
 
 void DBsvrConnection::process_msg(int type_, string buf_)
@@ -56,12 +62,6 @@ void DBsvrConnection::handle_fetch_info(string buf_)
     pImUser->set_id(user_info.m_nId);
     pImUser->set_name(user_info.m_strName);
     pImUser->set_nick_name(user_info.m_strNickName);
-
-
-    // set Connid--> userid
-    int conn_id = pImUser->get_conn()->get_id();
-    ConnManager::get_instance()->insert_conn_user(conn_id, user_info.m_nId);
-
 
 
 

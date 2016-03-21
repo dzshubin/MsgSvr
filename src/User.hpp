@@ -27,7 +27,7 @@ public:
     inline connection_ptr get_conn() { return  m_conn; }
     inline void set_conn(connection_ptr conn_) { m_conn = conn_; }
 
-
+    inline void free_conn() { m_conn.reset(); }
 private:
     int64_t m_nId;
     string m_strName;       // 名字

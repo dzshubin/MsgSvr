@@ -18,6 +18,7 @@ public:
     virtual void start() override;
     virtual void process_msg(int, string) override;
 
+    virtual void stop_after() override;
 private:
     void handle_client_login(string);
     void handle_chat(string);

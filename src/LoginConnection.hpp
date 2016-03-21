@@ -18,6 +18,7 @@ public:
     virtual void start() override;
     virtual void process_msg(int, string) override;
 
+    void stop_after();
 
 private:
     void register_msgsvr();

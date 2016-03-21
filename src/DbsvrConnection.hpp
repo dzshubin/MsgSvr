@@ -13,6 +13,7 @@ public:
     virtual void start() override;
     virtual void process_msg(int, string) override;
 
+    virtual void stop_after() override;
 private:
     void handle_fetch_info(string );
 

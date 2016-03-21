@@ -28,6 +28,11 @@ void LoginConnection::start()
 }
 
 
+void LoginConnection::stop_after()
+{
+
+}
+
 
 void LoginConnection::process_msg(int /**/, string /**/)
 {

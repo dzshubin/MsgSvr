@@ -41,6 +41,11 @@ void RouterConnection::start()
 }
 
 
+void RouterConnection::stop_after()
+{
+
+}
+
 void RouterConnection::allocate_port()
 {
     // 向router注册,申请账号

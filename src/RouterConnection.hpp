@@ -18,6 +18,8 @@ public:
     virtual void start () override;
     virtual void process_msg(int, string) override;
 
+    virtual void stop_after() override;
+
 public:
     void handle_user_chat(string buf_);
     void handle_allocate_port(string buf_);
