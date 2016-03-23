@@ -35,9 +35,13 @@ bool UserManager::remove(int conn_id_)
     }
     else
     {
+
+        cout << "user disconnect! user id: " << ((*it)->get_id())  << endl;
+
         m_users.erase(it);
         (*it)->free_conn();
         delete (*it);
+
         return true;
     }
 }
