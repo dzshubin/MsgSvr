@@ -19,9 +19,13 @@ public:
     virtual void process_msg(int, string) override;
 
     virtual void stop_after() override;
+
 private:
     void handle_client_login(string);
     void handle_chat(string);
+    void handle_fetch_contacts(string);
+
+
 };
 
 #endif // ClientConnection_HPP_INCLUDED

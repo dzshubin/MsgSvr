@@ -60,6 +60,10 @@ void ClientConnection::process_msg(int type_, string buf_)
     case (int)C2M::CHAT:
         std::cout << "client chat!" << std::endl;
         handle_chat(buf_);
+
+    case (int)C2M::FETCH_CONTACTS:
+        cout << "fetch contacts!" << endl;
+        handle_fetch_contacts(buf_);
         break;
     }
 }
@@ -140,7 +144,7 @@ void ClientConnection::handle_client_login(string buf_)
 
 
 
-    Msg_login_id login_id;
+    MSG_LOGIN_ID login_id;
     login_id.m_nId = id;
 
     CMsg packet;
@@ -153,9 +157,6 @@ void ClientConnection::handle_client_login(string buf_)
 
 void ClientConnection::handle_chat(string buf_)
 {
-
-    cout << "Client msg chat!" << endl;
-
 
     GOOGLE_PROTOBUF_VERIFY_VERSION;
     using namespace google::protobuf;
@@ -255,6 +256,83 @@ void ClientConnection::handle_chat(string buf_)
     }
 
 }
+
+
+
+
+void ClientConnection::handle_fetch_contacts(string buf_)
+{
+    GOOGLE_PROTOBUF_VERIFY_VERSION;
+    using namespace google::protobuf;
+
+    cout << "buf: " << buf_.c_str() << "size：" << buf_.size()<<endl;
+
+    // namelen
+    int32_t name_len = AsInt32(buf_.c_str());
+    cout << "chat name_len: " << name_len << endl;
+
+    // type name
+    const char* chr_name = buf_.c_str() + sizeof(int32_t);
+    string type_name = string(chr_name, name_len);
+
+    cout << "type_name: " << type_name << endl;
+
+
+    shared_ptr<google::protobuf::Message> p_ms = CreateMessage(type_name);
+
+    if (p_ms == nullptr)
+    {
+        cout << "fail!" << endl;
+        return;
+    }
+
+    // 反序列化
+    int size = buf_.size();
+    p_ms->ParseFromArray(buf_.c_str() + sizeof(int32_t) + name_len, size - sizeof(int32_t)-name_len);
+
+    const Reflection* rf = p_ms->GetReflection();
+    const FieldDescriptor* f_user_id = p_ms->GetDescriptor()->FindFieldByName("id");
+
+
+    int64_t nUserId = 0;
+
+    if (f_user_id)
+    {
+        nUserId = rf->GetInt64(*p_ms, f_user_id);
+    }
+    else
+    {
+        cout << "f_user_id is null!" << endl;
+        return;
+    }
+
+
+    MSG_LOGIN_ID login_id;
+    login_id.m_nId = nUserId;
+
+    CMsg packet;
+    packet.set_msg_type(static_cast<int>(M2D::FETCH_CONTACTS));
+    packet.serialization_data_Asio(login_id);
+    send_to_db(packet);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

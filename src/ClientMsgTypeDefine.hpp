@@ -1,15 +1,6 @@
 #ifndef CLIENTMSGTYPEDEFINE_HPP_INCLUDED
 #define CLIENTMSGTYPEDEFINE_HPP_INCLUDED
 
-/*********************************************************************************
- *Copyright(C),2010-2011,Your Company
- *FileName: // 文件名
- *Author: shub//作者
- *Version: //版本
- *Date: 2015-1-21//创建日期
- *Description: 消息协议定义//用于主要说明此程序文件完成的主要功能
- *********************************************************************************/
-
 
 //
 //
@@ -30,8 +21,29 @@ enum class C2M
      * @parm       id_ : 玩家id
      * @retruen    res : 登陆结果 0-成功  1-失败
      */
-    LOGIN                = 1000,
-    CHAT                 = 1001,
+    LOGIN                   = 1000,
+
+    /*
+     * 聊天
+     * @parm send_id    : 发送者id
+     * @parm recv_id    : 接受者id
+     * @parm content    : 发送内容
+     */
+    CHAT                    = 1001,
+
+    /*
+     * 请求联系人列表
+     * @parm    user_id
+     * @return  int 总人数,
+     *          循环
+     *          [
+     *              int     id,         // 用户id
+     *              string  name,       // 姓名
+     *              string  nick_name   // 昵称
+     *          ]
+     */
+    FETCH_CONTACTS          = 1002,
+
 };
 
 
@@ -58,13 +70,19 @@ enum class M2L
     UPDATE                              = 7001,     // 更新当前消息服务器总人数
 };
 
+
 // 消息svr发给DBSVr
 enum class M2D
 {
     /*
      * 通过用户id读取用户信息
      */
-    READ_INFO                 = 5000,
+    READ_INFO                   = 5000,
+
+    /*
+     * 读取指定用户id的联系人
+     */
+    FETCH_CONTACTS              = 5001,
 };
 
 

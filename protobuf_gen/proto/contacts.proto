@@ -1,0 +1,16 @@
+syntax="proto3";
+package IM;
+
+message Contacts
+{
+    repeated User contacts = 1;
+}
+
+
+
+message User
+{
+    int64 id            = 1;
+    string name         = 2;
+    string nick_name    = 3;
+}
