@@ -13,4 +13,5 @@ message User
     int64 id            = 1;
     string name         = 2;
     string nick_name    = 3;
+    string sex          = 4;
 }

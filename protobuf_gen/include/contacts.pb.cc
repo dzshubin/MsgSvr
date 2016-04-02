@@ -53,10 +53,11 @@ void protobuf_AssignDesc_contacts_2eproto() {
       GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Contacts, _internal_metadata_),
       GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Contacts, _is_default_instance_));
   User_descriptor_ = file->message_type(1);
-  static const int User_offsets_[3] = {
+  static const int User_offsets_[4] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(User, id_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(User, name_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(User, nick_name_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(User, sex_),
   };
   User_reflection_ =
     ::google::protobuf::internal::GeneratedMessageReflection::NewGeneratedMessageReflection(
@@ -104,9 +105,9 @@ void protobuf_AddDesc_contacts_2eproto() {
 
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
     "\n\016contacts.proto\022\002IM\"&\n\010Contacts\022\032\n\010cont"
-    "acts\030\001 \003(\0132\010.IM.User\"3\n\004User\022\n\n\002id\030\001 \001(\003"
-    "\022\014\n\004name\030\002 \001(\t\022\021\n\tnick_name\030\003 \001(\tb\006proto"
-    "3", 121);
+    "acts\030\001 \003(\0132\010.IM.User\"@\n\004User\022\n\n\002id\030\001 \001(\003"
+    "\022\014\n\004name\030\002 \001(\t\022\021\n\tnick_name\030\003 \001(\t\022\013\n\003sex"
+    "\030\004 \001(\tb\006proto3", 134);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "contacts.proto", &protobuf_RegisterTypes);
   Contacts::default_instance_ = new Contacts();
@@ -384,6 +385,7 @@ Contacts::contacts() const {
 const int User::kIdFieldNumber;
 const int User::kNameFieldNumber;
 const int User::kNickNameFieldNumber;
+const int User::kSexFieldNumber;
 #endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
 
 User::User()
@@ -411,6 +413,7 @@ void User::SharedCtor() {
   id_ = GOOGLE_LONGLONG(0);
   name_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   nick_name_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  sex_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
 
 User::~User() {
@@ -421,6 +424,7 @@ User::~User() {
 void User::SharedDtor() {
   name_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   nick_name_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  sex_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   if (this != default_instance_) {
   }
 }
@@ -454,6 +458,7 @@ void User::Clear() {
   id_ = GOOGLE_LONGLONG(0);
   name_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   nick_name_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  sex_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
 
 bool User::MergePartialFromCodedStream(
@@ -510,6 +515,23 @@ bool User::MergePartialFromCodedStream(
         } else {
           goto handle_unusual;
         }
+        if (input->ExpectTag(34)) goto parse_sex;
+        break;
+      }
+
+      // optional string sex = 4;
+      case 4: {
+        if (tag == 34) {
+         parse_sex:
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_sex()));
+          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            this->sex().data(), this->sex().length(),
+            ::google::protobuf::internal::WireFormatLite::PARSE,
+            "IM.User.sex"));
+        } else {
+          goto handle_unusual;
+        }
         if (input->ExpectAtEnd()) goto success;
         break;
       }
@@ -563,6 +585,16 @@ void User::SerializeWithCachedSizes(
       3, this->nick_name(), output);
   }
 
+  // optional string sex = 4;
+  if (this->sex().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->sex().data(), this->sex().length(),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "IM.User.sex");
+    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
+      4, this->sex(), output);
+  }
+
   // @@protoc_insertion_point(serialize_end:IM.User)
 }
 
@@ -596,6 +628,17 @@ void User::SerializeWithCachedSizes(
         3, this->nick_name(), target);
   }
 
+  // optional string sex = 4;
+  if (this->sex().size() > 0) {
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+      this->sex().data(), this->sex().length(),
+      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
+      "IM.User.sex");
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        4, this->sex(), target);
+  }
+
   // @@protoc_insertion_point(serialize_to_array_end:IM.User)
   return target;
 }
@@ -622,6 +665,13 @@ int User::ByteSize() const {
     total_size += 1 +
       ::google::protobuf::internal::WireFormatLite::StringSize(
         this->nick_name());
+  }
+
+  // optional string sex = 4;
+  if (this->sex().size() > 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::StringSize(
+        this->sex());
   }
 
   GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
@@ -655,6 +705,10 @@ void User::MergeFrom(const User& from) {
 
     nick_name_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.nick_name_);
   }
+  if (from.sex().size() > 0) {
+
+    sex_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.sex_);
+  }
 }
 
 void User::CopyFrom(const ::google::protobuf::Message& from) {
@@ -682,6 +736,7 @@ void User::InternalSwap(User* other) {
   std::swap(id_, other->id_);
   name_.Swap(&other->name_);
   nick_name_.Swap(&other->nick_name_);
+  sex_.Swap(&other->sex_);
   _internal_metadata_.Swap(&other->_internal_metadata_);
   std::swap(_cached_size_, other->_cached_size_);
 }
@@ -795,6 +850,49 @@ void User::clear_nick_name() {
   }
   nick_name_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), nick_name);
   // @@protoc_insertion_point(field_set_allocated:IM.User.nick_name)
+}
+
+// optional string sex = 4;
+void User::clear_sex() {
+  sex_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+ const ::std::string& User::sex() const {
+  // @@protoc_insertion_point(field_get:IM.User.sex)
+  return sex_.GetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+ void User::set_sex(const ::std::string& value) {
+  
+  sex_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:IM.User.sex)
+}
+ void User::set_sex(const char* value) {
+  
+  sex_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:IM.User.sex)
+}
+ void User::set_sex(const char* value, size_t size) {
+  
+  sex_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:IM.User.sex)
+}
+ ::std::string* User::mutable_sex() {
+  
+  // @@protoc_insertion_point(field_mutable:IM.User.sex)
+  return sex_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+ ::std::string* User::release_sex() {
+  
+  return sex_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+ void User::set_allocated_sex(::std::string* sex) {
+  if (sex != NULL) {
+    
+  } else {
+    
+  }
+  sex_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), sex);
+  // @@protoc_insertion_point(field_set_allocated:IM.User.sex)
 }
 
 #endif  // PROTOBUF_INLINE_NOT_IN_HEADERS

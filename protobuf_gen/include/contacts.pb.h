@@ -209,6 +209,17 @@ class User : public ::google::protobuf::Message {
   ::std::string* release_nick_name();
   void set_allocated_nick_name(::std::string* nick_name);
 
+  // optional string sex = 4;
+  void clear_sex();
+  static const int kSexFieldNumber = 4;
+  const ::std::string& sex() const;
+  void set_sex(const ::std::string& value);
+  void set_sex(const char* value);
+  void set_sex(const char* value, size_t size);
+  ::std::string* mutable_sex();
+  ::std::string* release_sex();
+  void set_allocated_sex(::std::string* sex);
+
   // @@protoc_insertion_point(class_scope:IM.User)
  private:
 
@@ -217,6 +228,7 @@ class User : public ::google::protobuf::Message {
   ::google::protobuf::int64 id_;
   ::google::protobuf::internal::ArenaStringPtr name_;
   ::google::protobuf::internal::ArenaStringPtr nick_name_;
+  ::google::protobuf::internal::ArenaStringPtr sex_;
   mutable int _cached_size_;
   friend void  protobuf_AddDesc_contacts_2eproto();
   friend void protobuf_AssignDesc_contacts_2eproto();
@@ -365,6 +377,49 @@ inline void User::set_allocated_nick_name(::std::string* nick_name) {
   }
   nick_name_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), nick_name);
   // @@protoc_insertion_point(field_set_allocated:IM.User.nick_name)
+}
+
+// optional string sex = 4;
+inline void User::clear_sex() {
+  sex_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline const ::std::string& User::sex() const {
+  // @@protoc_insertion_point(field_get:IM.User.sex)
+  return sex_.GetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void User::set_sex(const ::std::string& value) {
+  
+  sex_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:IM.User.sex)
+}
+inline void User::set_sex(const char* value) {
+  
+  sex_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:IM.User.sex)
+}
+inline void User::set_sex(const char* value, size_t size) {
+  
+  sex_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:IM.User.sex)
+}
+inline ::std::string* User::mutable_sex() {
+  
+  // @@protoc_insertion_point(field_mutable:IM.User.sex)
+  return sex_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline ::std::string* User::release_sex() {
+  
+  return sex_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+inline void User::set_allocated_sex(::std::string* sex) {
+  if (sex != NULL) {
+    
+  } else {
+    
+  }
+  sex_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), sex);
+  // @@protoc_insertion_point(field_set_allocated:IM.User.sex)
 }
 
 #endif  // !PROTOBUF_INLINE_NOT_IN_HEADERS
