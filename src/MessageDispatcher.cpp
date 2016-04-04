@@ -18,10 +18,11 @@ void MessageDispatcher::register_message_callback(int type_, const Callback::Pro
     auto it = m_callbacks.find(type_);
     if (it != m_callbacks.end())
     {
-        cout << "error! callback is registered!" << endl;
+        cout << "error!" << "type: " << type_ << " callback is registered!" << endl;
     }
     else
     {
+        cout << "register type: " << type_ << endl;
         shared_ptr<Callback> pd (new Callback(callback_));
         m_callbacks.insert(make_pair(type_, pd));
     }
@@ -39,7 +40,7 @@ void MessageDispatcher::on_message(int type_, shared_ptr<google::protobuf::Messa
     }
     else
     {
-        cout << "error! not found type!" << endl;
+        cout << "error! Not found type! type: " << type_ << endl;
     }
 }
 
