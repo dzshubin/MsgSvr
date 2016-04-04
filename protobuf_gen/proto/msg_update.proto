@@ -1,0 +1,7 @@
+syntax = "proto3";
+package IM;
+
+message Update
+{
+    int32 count = 1;	// 服务器新的人数
+}

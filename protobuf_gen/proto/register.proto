@@ -1,0 +1,7 @@
+syntax = "proto3";
+package IM;
+
+message Register
+{
+    int32 port = 1;	// 注册的端口
+}
