@@ -97,10 +97,16 @@ class Contacts : public ::google::protobuf::Message {
 
   // accessors -------------------------------------------------------
 
-  // repeated .IM.User contacts = 1;
+  // optional int64 req_id = 1;
+  void clear_req_id();
+  static const int kReqIdFieldNumber = 1;
+  ::google::protobuf::int64 req_id() const;
+  void set_req_id(::google::protobuf::int64 value);
+
+  // repeated .IM.User contacts = 2;
   int contacts_size() const;
   void clear_contacts();
-  static const int kContactsFieldNumber = 1;
+  static const int kContactsFieldNumber = 2;
   const ::IM::User& contacts(int index) const;
   ::IM::User* mutable_contacts(int index);
   ::IM::User* add_contacts();
@@ -114,6 +120,7 @@ class Contacts : public ::google::protobuf::Message {
 
   ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
   bool _is_default_instance_;
+  ::google::protobuf::int64 req_id_;
   ::google::protobuf::RepeatedPtrField< ::IM::User > contacts_;
   mutable int _cached_size_;
   friend void  protobuf_AddDesc_contacts_2eproto();
@@ -245,7 +252,21 @@ class User : public ::google::protobuf::Message {
 #if !PROTOBUF_INLINE_NOT_IN_HEADERS
 // Contacts
 
-// repeated .IM.User contacts = 1;
+// optional int64 req_id = 1;
+inline void Contacts::clear_req_id() {
+  req_id_ = GOOGLE_LONGLONG(0);
+}
+inline ::google::protobuf::int64 Contacts::req_id() const {
+  // @@protoc_insertion_point(field_get:IM.Contacts.req_id)
+  return req_id_;
+}
+inline void Contacts::set_req_id(::google::protobuf::int64 value) {
+  
+  req_id_ = value;
+  // @@protoc_insertion_point(field_set:IM.Contacts.req_id)
+}
+
+// repeated .IM.User contacts = 2;
 inline int Contacts::contacts_size() const {
   return contacts_.size();
 }

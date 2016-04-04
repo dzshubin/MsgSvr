@@ -38,7 +38,8 @@ void protobuf_AssignDesc_contacts_2eproto() {
       "contacts.proto");
   GOOGLE_CHECK(file != NULL);
   Contacts_descriptor_ = file->message_type(0);
-  static const int Contacts_offsets_[1] = {
+  static const int Contacts_offsets_[2] = {
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Contacts, req_id_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(Contacts, contacts_),
   };
   Contacts_reflection_ =
@@ -104,10 +105,10 @@ void protobuf_AddDesc_contacts_2eproto() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
-    "\n\016contacts.proto\022\002IM\"&\n\010Contacts\022\032\n\010cont"
-    "acts\030\001 \003(\0132\010.IM.User\"@\n\004User\022\n\n\002id\030\001 \001(\003"
-    "\022\014\n\004name\030\002 \001(\t\022\021\n\tnick_name\030\003 \001(\t\022\013\n\003sex"
-    "\030\004 \001(\tb\006proto3", 134);
+    "\n\016contacts.proto\022\002IM\"6\n\010Contacts\022\016\n\006req_"
+    "id\030\001 \001(\003\022\032\n\010contacts\030\002 \003(\0132\010.IM.User\"@\n\004"
+    "User\022\n\n\002id\030\001 \001(\003\022\014\n\004name\030\002 \001(\t\022\021\n\tnick_n"
+    "ame\030\003 \001(\t\022\013\n\003sex\030\004 \001(\tb\006proto3", 150);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "contacts.proto", &protobuf_RegisterTypes);
   Contacts::default_instance_ = new Contacts();
@@ -137,6 +138,7 @@ static void MergeFromFail(int line) {
 // ===================================================================
 
 #if !defined(_MSC_VER) || _MSC_VER >= 1900
+const int Contacts::kReqIdFieldNumber;
 const int Contacts::kContactsFieldNumber;
 #endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
 
@@ -161,6 +163,7 @@ Contacts::Contacts(const Contacts& from)
 void Contacts::SharedCtor() {
     _is_default_instance_ = false;
   _cached_size_ = 0;
+  req_id_ = GOOGLE_LONGLONG(0);
 }
 
 Contacts::~Contacts() {
@@ -199,6 +202,7 @@ Contacts* Contacts::New(::google::protobuf::Arena* arena) const {
 }
 
 void Contacts::Clear() {
+  req_id_ = GOOGLE_LONGLONG(0);
   contacts_.Clear();
 }
 
@@ -212,9 +216,24 @@ bool Contacts::MergePartialFromCodedStream(
     tag = p.first;
     if (!p.second) goto handle_unusual;
     switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
-      // repeated .IM.User contacts = 1;
+      // optional int64 req_id = 1;
       case 1: {
-        if (tag == 10) {
+        if (tag == 8) {
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::int64, ::google::protobuf::internal::WireFormatLite::TYPE_INT64>(
+                 input, &req_id_)));
+
+        } else {
+          goto handle_unusual;
+        }
+        if (input->ExpectTag(18)) goto parse_contacts;
+        break;
+      }
+
+      // repeated .IM.User contacts = 2;
+      case 2: {
+        if (tag == 18) {
+         parse_contacts:
           DO_(input->IncrementRecursionDepth());
          parse_loop_contacts:
           DO_(::google::protobuf::internal::WireFormatLite::ReadMessageNoVirtualNoRecursionDepth(
@@ -222,7 +241,7 @@ bool Contacts::MergePartialFromCodedStream(
         } else {
           goto handle_unusual;
         }
-        if (input->ExpectTag(10)) goto parse_loop_contacts;
+        if (input->ExpectTag(18)) goto parse_loop_contacts;
         input->UnsafeDecrementRecursionDepth();
         if (input->ExpectAtEnd()) goto success;
         break;
@@ -252,10 +271,15 @@ failure:
 void Contacts::SerializeWithCachedSizes(
     ::google::protobuf::io::CodedOutputStream* output) const {
   // @@protoc_insertion_point(serialize_start:IM.Contacts)
-  // repeated .IM.User contacts = 1;
+  // optional int64 req_id = 1;
+  if (this->req_id() != 0) {
+    ::google::protobuf::internal::WireFormatLite::WriteInt64(1, this->req_id(), output);
+  }
+
+  // repeated .IM.User contacts = 2;
   for (unsigned int i = 0, n = this->contacts_size(); i < n; i++) {
     ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
-      1, this->contacts(i), output);
+      2, this->contacts(i), output);
   }
 
   // @@protoc_insertion_point(serialize_end:IM.Contacts)
@@ -264,11 +288,16 @@ void Contacts::SerializeWithCachedSizes(
 ::google::protobuf::uint8* Contacts::SerializeWithCachedSizesToArray(
     ::google::protobuf::uint8* target) const {
   // @@protoc_insertion_point(serialize_to_array_start:IM.Contacts)
-  // repeated .IM.User contacts = 1;
+  // optional int64 req_id = 1;
+  if (this->req_id() != 0) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteInt64ToArray(1, this->req_id(), target);
+  }
+
+  // repeated .IM.User contacts = 2;
   for (unsigned int i = 0, n = this->contacts_size(); i < n; i++) {
     target = ::google::protobuf::internal::WireFormatLite::
       WriteMessageNoVirtualToArray(
-        1, this->contacts(i), target);
+        2, this->contacts(i), target);
   }
 
   // @@protoc_insertion_point(serialize_to_array_end:IM.Contacts)
@@ -278,7 +307,14 @@ void Contacts::SerializeWithCachedSizes(
 int Contacts::ByteSize() const {
   int total_size = 0;
 
-  // repeated .IM.User contacts = 1;
+  // optional int64 req_id = 1;
+  if (this->req_id() != 0) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::Int64Size(
+        this->req_id());
+  }
+
+  // repeated .IM.User contacts = 2;
   total_size += 1 * this->contacts_size();
   for (int i = 0; i < this->contacts_size(); i++) {
     total_size +=
@@ -307,6 +343,9 @@ void Contacts::MergeFrom(const ::google::protobuf::Message& from) {
 void Contacts::MergeFrom(const Contacts& from) {
   if (GOOGLE_PREDICT_FALSE(&from == this)) MergeFromFail(__LINE__);
   contacts_.MergeFrom(from.contacts_);
+  if (from.req_id() != 0) {
+    set_req_id(from.req_id());
+  }
 }
 
 void Contacts::CopyFrom(const ::google::protobuf::Message& from) {
@@ -331,6 +370,7 @@ void Contacts::Swap(Contacts* other) {
   InternalSwap(other);
 }
 void Contacts::InternalSwap(Contacts* other) {
+  std::swap(req_id_, other->req_id_);
   contacts_.UnsafeArenaSwap(&other->contacts_);
   _internal_metadata_.Swap(&other->_internal_metadata_);
   std::swap(_cached_size_, other->_cached_size_);
@@ -347,7 +387,21 @@ void Contacts::InternalSwap(Contacts* other) {
 #if PROTOBUF_INLINE_NOT_IN_HEADERS
 // Contacts
 
-// repeated .IM.User contacts = 1;
+// optional int64 req_id = 1;
+void Contacts::clear_req_id() {
+  req_id_ = GOOGLE_LONGLONG(0);
+}
+ ::google::protobuf::int64 Contacts::req_id() const {
+  // @@protoc_insertion_point(field_get:IM.Contacts.req_id)
+  return req_id_;
+}
+ void Contacts::set_req_id(::google::protobuf::int64 value) {
+  
+  req_id_ = value;
+  // @@protoc_insertion_point(field_set:IM.Contacts.req_id)
+}
+
+// repeated .IM.User contacts = 2;
 int Contacts::contacts_size() const {
   return contacts_.size();
 }

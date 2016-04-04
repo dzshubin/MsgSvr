@@ -3,7 +3,8 @@ package IM;
 
 message Contacts
 {
-    repeated User contacts = 1;
+    int64 req_id = 1;		// 用户id
+    repeated User contacts = 2;	// 用户联系人列表
 }
 
 
