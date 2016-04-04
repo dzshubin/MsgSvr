@@ -3,10 +3,8 @@
 #include <arpa/inet.h>
 
 
-
 #include <boost/bind.hpp>
 
-static int g_count = 1;
 
 /**********************************************
  *
@@ -61,13 +59,11 @@ void Connection::read_body(int len_)
 
 void Connection::send(CMsg& msg, ip::tcp::socket& sock_)
 {
-    encode(msg);
-
     cout << "start send msg." << endl;
     auto self = shared_from_this();
 
 
-    async_write(sock_, boost::asio::buffer(m_strSendData),
+    async_write(sock_, boost::asio::buffer(msg.get_send_data()),
         m_strand.wrap(
             boost::bind(&Connection::handle_write, shared_from_this(),
                       boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred)
@@ -77,12 +73,12 @@ void Connection::send(CMsg& msg, ip::tcp::socket& sock_)
 
 void Connection::send(CMsg& msg)
 {
-    encode(msg);
+
 
     cout << "start send msg." << endl;
     auto self = shared_from_this();
 
-    async_write(m_sock, boost::asio::buffer(m_strSendData),
+    async_write(m_sock, boost::asio::buffer(msg.get_send_data()),
         m_strand.wrap(
             boost::bind(&Connection::handle_write, shared_from_this(),
                       boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred)
@@ -92,10 +88,9 @@ void Connection::send(CMsg& msg)
 
 void Connection::send_and_shutdown(CMsg& pkt, ip::tcp::socket& sock_)
 {
-    encode(pkt);
-    auto self = shared_from_this();
 
-    async_write(sock_, boost::asio::buffer(m_strSendData),
+    auto self = shared_from_this();
+    async_write(sock_, boost::asio::buffer(pkt.get_send_data()),
         m_strand.wrap(
             boost::bind(&Connection::handle_write_done_shutdown, shared_from_this(),
                       boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred,
@@ -111,21 +106,47 @@ ip::tcp::socket& Connection::socket()
 
 
 
-void Connection::stop()
+void Connection::disconnect()
 {
-    m_sock.close();
 
-    stop_after();
+    if (m_sock.is_open())
+    {
+        m_sock.close();
+    }
+
+    on_disconnect();
 }
 
 
 
 
-void Connection::on_connect()
+void Connection::connect(int conn_id_)
 {
-    // 分配连接标志
-    m_ConnId = (g_count++) % 32000;
-    start();
+    // 保存连接标志
+    m_conn_id = conn_id_;
+
+    //
+    on_connect();
+}
+
+
+void Connection::recv_msg()
+{
+    int type = 0;
+    pb_message_ptr p_message;
+
+    tie(type, p_message) = decode();
+
+
+    if (p_message != nullptr)
+    {
+        on_recv_msg(type, p_message);
+    }
+    else
+    {
+        cout << "decode error! message = nullptr! type: " << type << endl;
+    }
+
 }
 
 
@@ -144,7 +165,7 @@ int32_t Connection::AsInt32 (const char* buf)
 }
 
 
-shared_ptr<google::protobuf::Message> Connection::CreateMessage(const string& type_name)
+pb_message_ptr Connection::CreateMessage(const string& type_name)
 {
     using namespace google::protobuf;
 
@@ -184,42 +205,12 @@ shared_ptr<google::protobuf::Message> Connection::CreateMessage(const string& ty
 }
 
 
-
-
-void Connection::encode(CMsg& msg)
+tuple<int, pb_message_ptr> Connection::decode()
 {
-    cout << "start encode msg" << endl;
 
-    m_strSendData.clear();
+    GOOGLE_PROTOBUF_VERIFY_VERSION;
+    using namespace google::protobuf;
 
-    // 为头部预留空间
-    m_strSendData.resize(sizeof(int32_t));
-
-    // 消息类型
-    int32_t type = msg.get_msg_type();
-    int32_t be_type = ::htonl(type);
-    m_strSendData.append(reinterpret_cast<char*>(&be_type), sizeof(be_type));
-
-    // 序列化数据
-    m_strSendData.append(msg.get_send_data().c_str(), msg.send_data_len() + 1);
-
-
-    // 数据总长度
-    int32_t len = sizeof(int32_t) + msg.send_data_len() + 1;
-    int32_t be_len = ::htonl(len);
-    std::copy(reinterpret_cast<char*>(&be_len),
-              reinterpret_cast<char*>(&be_len) + sizeof(be_len),
-              m_strSendData.begin());
-
-
-    cout << "data len: " << len << endl;
-    cout << "send str size: " << m_strSendData.size() << endl;
-}
-
-
-
-void Connection::decode()
-{
     ostringstream os;
     os << &m_rBuf;
 
@@ -228,10 +219,39 @@ void Connection::decode()
 
     // 消息类型
     int32_t type = AsInt32(trans_data.c_str());
+    trans_data = trans_data.substr(sizeof(int32_t));
 
-    // 序列化数据
-    std::string buf = trans_data.substr(sizeof(int32_t));
-    process_msg(type, buf);
+    // 类名长度
+    int32_t name_len = AsInt32(trans_data.c_str());
+    cout << "name_len: " << name_len << endl;
+    trans_data = trans_data.substr(sizeof(int32_t));
+
+    // 类名
+    const char* chr_name = trans_data.c_str();
+    string type_name = string(chr_name, name_len-1);
+    cout << "type_name: " << type_name << endl;
+
+
+    shared_ptr<google::protobuf::Message> p_ms = CreateMessage(type_name);
+
+    if (p_ms == nullptr)
+    {
+        return make_tuple(type, nullptr);
+    }
+
+    else
+    {
+        // 反序列化
+        trans_data = trans_data.substr(name_len);
+
+        const char* buf_ = trans_data.c_str();
+        int size = trans_data.size();
+        cout << "data Len: " << size << endl;
+
+        p_ms->ParseFromArray(buf_, size);
+        return make_tuple(type, p_ms);
+    }
+
 }
 
 
@@ -249,7 +269,7 @@ void Connection::handle_read_head(const err_code& ec, std::size_t byte_trans)
     {
 
         int32_t data_len = AsInt32(head_info);
-        cout << data_len <<endl;
+        cout << "Total data len: " << data_len <<endl;
 
         // 开始读数据体
         read_body(data_len);
@@ -261,7 +281,7 @@ void Connection::handle_read_head(const err_code& ec, std::size_t byte_trans)
         cout << "# ERR: " << ec.message() << endl;
 
         // 关闭连接
-        stop();
+        disconnect();
     }
 }
 
@@ -274,7 +294,8 @@ void Connection::handle_read_body(const err_code& ec, std::size_t byte_trans)
     if (!ec)
     {
         cout << "readed data size: " << byte_trans <<endl;
-        decode();
+
+        recv_msg();
 
         // 继续读取数据
         read_head();
@@ -286,7 +307,7 @@ void Connection::handle_read_body(const err_code& ec, std::size_t byte_trans)
         cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
         cout << "# ERR: " << ec.message() << endl;
 
-        stop();
+        disconnect();
 
     }
 }
@@ -306,17 +327,25 @@ void Connection::handle_write(const err_code& ec, std::size_t byte_trans)
         cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
         cout << "# ERR: " << ec.message() << endl;
 
-        stop();
+        disconnect();
     }
 }
 
 
-void Connection::handle_write_done_shutdown(const err_code& ec, std::size_t byte_trans, ip::tcp::socket& sock_)
+void Connection::handle_write_done_shutdown(const err_code& ec, std::size_t byte_trans,
+    ip::tcp::socket& sock_)
 {
 
     if (!ec)
     {
         cout << "sended data len: " << byte_trans << endl;
+
+        // 发送验证结果后断开连接
+        if (sock_.is_open())
+        {
+            err_code ignore_ec;
+            sock_.shutdown(ip::tcp::socket::shutdown_both, ignore_ec);
+        }
     }
 
     else
@@ -325,11 +354,5 @@ void Connection::handle_write_done_shutdown(const err_code& ec, std::size_t byte
         cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
         cout << "# ERR: " << ec.message() << endl;
     }
-
-    if (sock_.is_open())
-    {
-        sock_.close();
-    }
-    stop_after();
 }
 

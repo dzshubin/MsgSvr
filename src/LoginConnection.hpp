@@ -1,5 +1,5 @@
-#ifndef LoginConnection_HPP_INCLUDED
-#define LoginConnection_HPP_INCLUDED
+#ifndef LOGINCONN_HPP_INCLUDED
+#define LOGINCONN_HPP_INCLUDED
 #include <string>
 
 #include <boost/asio/ip/tcp.hpp>
@@ -10,15 +10,14 @@
 using namespace std;
 using namespace boost::asio;
 
-class LoginConnection: public Connection
+class LoginConn: public Connection
 {
 public:
-    LoginConnection (io_service&);
+    LoginConn (io_service&);
 
-    virtual void start() override;
-    virtual void process_msg(int, string) override;
-
-    void stop_after();
+    virtual void on_connect() override;
+    virtual void on_recv_msg(int, pb_message_ptr) override;
+    virtual void on_disconnect() override;
 
 private:
     void register_msgsvr();
@@ -28,5 +27,5 @@ private:
 
 void send_to_login(CMsg&);
 
-#endif // LoginConnection_HPP_INCLUDED
+#endif // LOGINCONN_HPP_INCLUDED
 

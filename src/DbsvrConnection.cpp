@@ -10,43 +10,53 @@
 
 
 #include "contacts.pb.h"
+#include "login.pb.h"
+#include "msg_update.pb.h"
 
 
-static DBsvrConnection* g_dbsvr_handler = nullptr;
+#include <google/protobuf/message.h>
+#include <google/protobuf/reflection.h>
 
-DBsvrConnection::DBsvrConnection(io_service& io_)
+
+static DBSvrConn* g_dbsvr_handler = nullptr;
+
+DBSvrConn::DBSvrConn(io_service& io_)
   :Connection(io_)
 {
 
 }
 
 
-void DBsvrConnection::start()
+void DBSvrConn::on_connect()
 {
+
+    m_dispatcher.register_message_callback((int)M2D::READ_INFO,
+        bind(&DBSvrConn::handle_fetch_info, this, std::placeholders::_1));
+
+    m_dispatcher.register_message_callback((int)M2D::FETCH_CONTACTS,
+        bind(&DBSvrConn::handle_fetch_contacts, this, std::placeholders::_1));
+
     g_dbsvr_handler = this;
     read_head();
 }
 
 
-void DBsvrConnection::stop_after()
+void DBSvrConn::on_disconnect()
 {
 
 
 }
 
-void DBsvrConnection::process_msg(int type_, string buf_)
+void DBSvrConn::on_recv_msg(int type_, pb_message_ptr p_msg_)
 {
-    switch (type_)
-    {
-    case (int)M2D::READ_INFO:
-        handle_fetch_info(buf_);
-        break;
-
-    case (int)M2D::FETCH_CONTACTS:
-        handle_fetch_contacts(buf_);
-        break;
-    }
+    cout << "recv msg type: "  << type_ << endl;
+    m_dispatcher.on_message(type_, p_msg_);
 }
+
+
+
+
+
 
 
 /****************************************
@@ -56,107 +66,131 @@ void DBsvrConnection::process_msg(int type_, string buf_)
 
 
 
-
-void DBsvrConnection::handle_fetch_info(string buf_)
+void DBSvrConn::handle_fetch_info(pb_message_ptr p_msg_)
 {
-    Msg_user_info user_info;
-    deserialization(user_info, buf_);
+
+    GOOGLE_PROTOBUF_VERIFY_VERSION;
+    using namespace google::protobuf;
+
+    auto descriptor = p_msg_->GetDescriptor();
+    const Reflection* rf = p_msg_->GetReflection();
+    const FieldDescriptor* f_id = descriptor->FindFieldByName("id");
+    const FieldDescriptor* f_name = descriptor->FindFieldByName("name");
+    const FieldDescriptor* f_nick_name = descriptor->FindFieldByName("nick_name");
+    const FieldDescriptor* f_sex = descriptor->FindFieldByName("sex");
 
 
-    cout << "name: " << user_info.m_strName << endl;
-    cout << "nick name: " << user_info.m_strNickName << endl;
-
-
-    ImUser* pImUser = UserManager::get_instance()->get_user(user_info.m_nId);
-    if (pImUser == nullptr)
+    try
     {
-        //error
-        cout << "error! pImuser is null! user_id: "<< user_info.m_nId << endl;
-        return;
-    }
-
-    pImUser->set_id(user_info.m_nId);
-    pImUser->set_name(user_info.m_strName);
-    pImUser->set_nick_name(user_info.m_strNickName);
+        int64_t id = rf->GetInt64(*p_msg_, f_id);
+        string name = rf->GetString(*p_msg_, f_name);
+        string nick_name = rf->GetString(*p_msg_, f_nick_name);
+        string sex = rf->GetString(*p_msg_, f_sex);
 
 
+        ImUser* pImUser = UserManager::get_instance()->get_user(id);
+        if (pImUser == nullptr)
+        {
+            //error
+            cout << "error! pImuser is null! user_id: "<< id << endl;
+            return;
+        }
 
-    // 向客户端推送消息
-    IM::User user;
-    user.set_id(user_info.m_nId);
-    user.set_name(user_info.m_strName);
-    user.set_nick_name(user_info.m_strNickName);
+        pImUser->set_id(id);
+        pImUser->set_name(name);
+        pImUser->set_nick_name(nick_name);
+        pImUser->set_sex(sex);
 
-    CMsg packet;
-    packet.set_msg_type((int)C2M::LOGIN);
-    packet.serialization_data_protobuf(user);
-    send(packet, pImUser->get_conn()->socket());
+        // 向客户端推送消息
+        IM::User user;
+        user.set_id(id);
+        user.set_name(name);
+        user.set_nick_name(nick_name);
+        user.set_sex(sex);
 
-
-
-    // 向router发送用户上线的消息
-    MSG_LOGIN_ID user_login;
-    user_login.m_nId = user_info.m_nId;
-
-    packet.clear();
-    packet.set_msg_type((int)M2R::LOGIN);
-    packet.serialization_data_Asio(user_login);
-
-    send_to_router(packet);
-
-
-
-    // 向loginsvr发送本msgsvr的总人数
-    Msg_update_count counts;
-    counts.m_user_count = UserManager::get_instance()->size();
-
-    packet.clear();
-    packet.set_msg_type((int)M2L::UPDATE);
-    packet.serialization_data_Asio(counts);
-
-    send_to_login(packet);
-}
-
-
-void DBsvrConnection::handle_fetch_contacts(string buf_)
-{
-    MSG_CONTACTS db_contacts;
-    deserialization(db_contacts, buf_);
-
-    int64_t nUserId = db_contacts.m_req_id;
-
-
-    IM::Contacts client_contacts;
-
-    auto it = db_contacts.m_contacts.begin();
-    for(; it != db_contacts.m_contacts.end(); ++it)
-    {
-        IM::User* pUser = client_contacts.add_contacts();
-
-        pUser->set_id(it->m_user_id);
-        pUser->set_name(it->m_name);
-        pUser->set_nick_name(it->m_nick_name);
-    }
-
-
-    CMsg packet;
-    packet.set_msg_type(static_cast<int>(C2M::FETCH_CONTACTS));
-    packet.serialization_data_protobuf(client_contacts);
-
-
-    ImUser* pImUser = UserManager::get_instance()->get_user(nUserId);
-    if (pImUser == nullptr)
-    {
-        //error
-        cout << "error! pImuser is null! user_id: "<< nUserId << endl;
-    }
-    else
-    {
+        CMsg packet;
+        packet.encode((int)C2M::LOGIN, user);
         send(packet, pImUser->get_conn()->socket());
+
+
+
+        // 向router发送用户上线的消息
+        IM::LoginAccount user_login;
+        user_login.set_id(id);
+        user_login.set_passwd("");
+
+        CMsg routePkt;
+        routePkt.encode((int)M2R::LOGIN, user_login);
+        send_to_router(routePkt);
+
+
+
+        // 向loginsvr发送本msgsvr的总人数
+        IM::Update update_info;
+        update_info.set_count(UserManager::get_instance()->size());
+
+        CMsg loginPkt;
+        loginPkt.encode((int)M2L::UPDATE, update_info);
+        send_to_login(loginPkt);
+
+
+    }
+    catch (exception& e)
+    {
+        cout << "# ERR: exception in " << __FILE__;
+        cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
+        cout << "# ERR: " << e.what() << endl;
     }
 }
 
 
+void DBSvrConn::handle_fetch_contacts(pb_message_ptr p_msg_)
+{
+
+    try
+    {
+        GOOGLE_PROTOBUF_VERIFY_VERSION;
+        using namespace google::protobuf;
+
+        auto descriptor = p_msg_->GetDescriptor();
+        const Reflection* rf = p_msg_->GetReflection();
+        const FieldDescriptor* f_req_id = descriptor->FindFieldByName("req_id");
+        const FieldDescriptor* f_contacts = descriptor->FindFieldByName("contacts");
+
+
+
+        int64_t id = rf->GetInt64(*p_msg_, f_req_id);
+
+        if(f_contacts->is_repeated())
+        {
+
+            CMsg packet;
+            packet.encode((int)C2M::FETCH_CONTACTS, *p_msg_);
+
+
+            ImUser* pImUser = UserManager::get_instance()->get_user(id);
+            if (pImUser == nullptr)
+            {
+                cout << "error! pImuser is null! user_id: "<< id << endl;
+            }
+            else
+            {
+                send(packet, pImUser->get_conn()->socket());
+            }
+        }
+        else
+        {
+            cout << "error! ProtoBuf Type error!" << endl;
+        }
+    }
+    catch (exception& e)
+    {
+        cout << "# ERR: exception in " << __FILE__;
+        cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
+        cout << "# ERR: " << e.what() << endl;
+    }
+
+}
 
 
 

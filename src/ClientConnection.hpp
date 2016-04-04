@@ -1,7 +1,8 @@
-#ifndef ClientConnection_HPP_INCLUDED
-#define ClientConnection_HPP_INCLUDED
+#ifndef CLIENTCONN_HPP_INCLUDED
+#define CLIENTCONN_HPP_INCLUDED
 
 #include "Connection.hpp"
+#include "MessageDispatcher.h"
 
 #include <boost/asio/ip/tcp.hpp>
 
@@ -9,23 +10,27 @@ using namespace boost::asio;
 using namespace std;
 
 
-class ClientConnection: public Connection
+class ClientConn: public Connection
 {
 public:
-    ClientConnection(io_service&);
+    ClientConn(io_service&);
 
 public:
-    virtual void start() override;
-    virtual void process_msg(int, string) override;
+    virtual void on_connect() override;
+    virtual void on_recv_msg(int, pb_message_ptr) override;
+    virtual void on_disconnect() override;
 
-    virtual void stop_after() override;
 
 private:
-    void handle_client_login(string);
-    void handle_chat(string);
-    void handle_fetch_contacts(string);
+    void handle_client_login(pb_message_ptr);
+    void handle_chat(pb_message_ptr);
+    void handle_fetch_contacts(pb_message_ptr);
+
+
+private:
+    MessageDispatcher m_dispatcher;
 
 
 };
 
-#endif // ClientConnection_HPP_INCLUDED
+#endif // CLIENTCONN_HPP_INCLUDED

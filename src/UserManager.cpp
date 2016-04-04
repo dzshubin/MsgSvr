@@ -25,7 +25,7 @@ bool UserManager::remove(int conn_id_)
     auto it = find_if(m_users.begin(), m_users.end(),
         [&] (ImUser* pUser)
         {
-            return pUser->get_conn()->get_id() == conn_id_;
+            return pUser->get_conn()->get_conn_id() == conn_id_;
         });
 
 

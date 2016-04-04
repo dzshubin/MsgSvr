@@ -13,8 +13,10 @@
 #include <vector>
 #include <thread>
 #include <algorithm>
-Server* g = nullptr;
+#include <memory>
 
+Server* g = nullptr;
+int Server::g_count = 1;
 
 /**********************************************
  *
@@ -83,7 +85,7 @@ bool Server::connect_router_after()
 
 void Server::await_stop()
 {
-    m_signals.async_wait([this](boost::system::error_code /*ec*/, int /*signo*/)
+    m_signals.async_wait([this](err_code /*ec*/, int /*signo*/)
     {
         // The server is stopped by cancelling all outstanding asynchronous
         // operations. Once all operations have finished the io_service::run()
@@ -119,7 +121,7 @@ void Server::connect_router()
     ip::tcp::resolver::iterator it = resolver.resolve( {"127.0.0.1", "10000"} );
 
 
-    m_router_conn.reset(new RouterConnection(m_io_service));
+    m_router_conn.reset(new RouterConn(m_io_service));
     async_connect(m_router_conn->socket(), it,
         [this] (const err_code& ec, ip::tcp::resolver::iterator it)
         {
@@ -127,7 +129,8 @@ void Server::connect_router()
             {
                 cout << "connected router!" << endl;
 
-                m_router_conn->on_connect();
+                int id = allocate_conn_id();
+                m_router_conn->connect(id);
             }
             else
             {
@@ -145,7 +148,7 @@ void Server::connect_db()
     ip::tcp::resolver resolver(m_io_service);
     ip::tcp::resolver::iterator it = resolver.resolve( {"127.0.0.1", "12000"} );
 
-    m_db_conn.reset(new DBsvrConnection(m_io_service));
+    m_db_conn.reset(new DBSvrConn(m_io_service));
     async_connect(m_db_conn->socket(), it,
         [this] (const err_code& ec, ip::tcp::resolver::iterator it_)
         {
@@ -153,8 +156,8 @@ void Server::connect_db()
             {
                 cout << "connected DbSvr!" << endl;
 
-
-                m_db_conn->on_connect();
+                int id = allocate_conn_id();
+                m_db_conn->connect(id);
             }
 
             else
@@ -175,16 +178,16 @@ void Server::connect_login()
     ip::tcp::resolver::iterator it = resolver.resolve( {"127.0.0.1", "9800"} );
 
 
-    m_login_conn.reset(new LoginConnection(m_io_service));
+    m_login_conn.reset(new LoginConn(m_io_service));
     async_connect(m_login_conn->socket(), it,
         [this] (const err_code& ec, ip::tcp::resolver::iterator it_)
         {
             if (!ec)
             {
                 cout << "connected login!" << endl;
-                //ConnManager::get_instance()->insert(m_login_conn);
 
-                m_login_conn->on_connect();
+                int id = allocate_conn_id();
+                m_login_conn->connect(id);
             }
             else
             {
@@ -199,8 +202,7 @@ void Server::connect_login()
 
 void Server::wait_accept_client()
 {
-    std::cout << "start accept!" << std::endl;
-    m_client_conn.reset(new ClientConnection(m_io_service));
+    m_client_conn.reset(new ClientConn(m_io_service));
 
     m_accClient.async_accept(m_client_conn->socket(), [this] (const err_code& ec)
         {
@@ -210,7 +212,8 @@ void Server::wait_accept_client()
                      << "client port: "    << m_client_conn->socket().remote_endpoint().port() << endl;
 
 
-                m_client_conn->on_connect();
+                int id = allocate_conn_id();
+                m_client_conn->connect(id);
             }
             else
             {
@@ -238,6 +241,10 @@ void Server::wait_accept_client()
  }
 
 
+int Server::allocate_conn_id()
+{
+    return (g_count++) % 65535;
+}
 
 
 

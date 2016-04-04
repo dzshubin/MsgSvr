@@ -33,6 +33,7 @@ public:
 public:
     int get_listen_port();
     void set_listen_port(int);
+    int allocate_conn_id();
 
 
 private:
@@ -71,6 +72,7 @@ private:
 
 private:
     int m_ClientListenPort;         // 监听用户连接端口
+    static int g_count ;
 };
 
 

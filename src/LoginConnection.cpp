@@ -4,7 +4,10 @@
 #include "MsgStruct.hpp"
 #include  <boost/archive/binary_oarchive.hpp>
 
-static LoginConnection* g_login_handler = nullptr;
+
+#include "register.pb.h"
+
+static LoginConn* g_login_handler = nullptr;
 
 
 /****************************************
@@ -12,14 +15,14 @@ static LoginConnection* g_login_handler = nullptr;
  *
  */
 
-LoginConnection::LoginConnection(io_service& io_)
+LoginConn::LoginConn(io_service& io_)
   :Connection(io_)
 {
 
 }
 
 
-void LoginConnection::start()
+void LoginConn::on_connect()
 {
     g_login_handler = this;
 
@@ -28,13 +31,13 @@ void LoginConnection::start()
 }
 
 
-void LoginConnection::stop_after()
+void LoginConn::on_disconnect()
 {
 
 }
 
 
-void LoginConnection::process_msg(int /**/, string /**/)
+void LoginConn::on_recv_msg(int /**/, pb_message_ptr /**/)
 {
 
 }
@@ -55,15 +58,14 @@ void send_to_login (CMsg& msg)
  *
  */
 
-void LoginConnection::register_msgsvr()
+void LoginConn::register_msgsvr()
 {
 
-    Msg_msgsvr_register msgsvr;
-    msgsvr.m_port = g->get_listen_port();
+    IM::Register msgsvr;
+    msgsvr.set_port(g->get_listen_port());
+
 
     CMsg packet;
-    packet.set_msg_type((int)M2L::REGISTER);
-    packet.serialization_data_Asio(msgsvr);
-
+    packet.encode((int)M2L::REGISTER, msgsvr);
     send(packet);
 }

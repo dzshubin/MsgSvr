@@ -9,15 +9,14 @@
 #include "UserManager.hpp"
 
 #include "chat.pb.h"
+#include "login.pb.h"
 
-#include <boost/archive/binary_iarchive.hpp>
-#include <boost/archive/binary_oarchive.hpp>
-#include <boost/archive/text_oarchive.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 
+#include <functional>
 
 
-ClientConnection::ClientConnection(io_service& io_)
+ClientConn::ClientConn(io_service& io_)
   :Connection(io_)
 {
 
@@ -30,8 +29,19 @@ ClientConnection::ClientConnection(io_service& io_)
  *
  */
 
-void ClientConnection::start()
+void ClientConn::on_connect()
 {
+    m_dispatcher.register_message_callback((int)C2M::LOGIN,
+        bind(&ClientConn::handle_client_login, this, std::placeholders::_1));
+
+
+    m_dispatcher.register_message_callback((int)C2M::CHAT,
+        bind(&ClientConn::handle_chat, this, std::placeholders::_1));
+
+    m_dispatcher.register_message_callback((int)C2M::FETCH_CONTACTS,
+        bind(&ClientConn::handle_fetch_contacts, this, std::placeholders::_1));
+
+
 
     // 开始从客户端读取消息
     read_head();
@@ -39,33 +49,17 @@ void ClientConnection::start()
 
 
 
-void ClientConnection::stop_after()
+void ClientConn::on_disconnect()
 {
-    bool result = UserManager::get_instance()->remove(get_id());
+    bool result = UserManager::get_instance()->remove(get_conn_id());
 }
 
 
-void ClientConnection::process_msg(int type_, string buf_)
+void ClientConn::on_recv_msg(int type_, pb_message_ptr p_msg_)
 {
-    std::cout << "start process client msg!" << std::endl;
     std::cout << "msg type: " <<type_<< std::endl;
 
-    switch (type_)
-    {
-    case (int)C2M::LOGIN:
-        std::cout << "client login!" << std::endl;
-        handle_client_login(buf_);
-        break;
-
-    case (int)C2M::CHAT:
-        std::cout << "client chat!" << std::endl;
-        handle_chat(buf_);
-
-    case (int)C2M::FETCH_CONTACTS:
-        cout << "fetch contacts!" << endl;
-        handle_fetch_contacts(buf_);
-        break;
-    }
+    m_dispatcher.on_message(type_, p_msg_);
 }
 
 
@@ -76,53 +70,49 @@ void ClientConnection::process_msg(int type_, string buf_)
  *
  */
 
-void ClientConnection::handle_client_login(string buf_)
+void ClientConn::handle_client_login(pb_message_ptr p_msg_)
 {
 
 
     GOOGLE_PROTOBUF_VERIFY_VERSION;
     using namespace google::protobuf;
 
-    cout << "buf: " << buf_.c_str() << "size：" << buf_.size()<<endl;
-
-    // namelen
-    int32_t name_len = AsInt32(buf_.c_str());
-    cout << "name_len: " << name_len << endl;
-
-    // type name
-    const char* chr_name = buf_.c_str() + sizeof(int32_t);
-    string type_name = string(chr_name, name_len);
-    cout << "type_name: " << type_name << endl;
-
-    shared_ptr<google::protobuf::Message> p_ms = CreateMessage(type_name);
-
-    if (p_ms == nullptr)
-    {
-        cout << "fail!" << endl;
-        return;
-    }
-
-    // 反序列化
-    int size = buf_.size();
-    p_ms->ParseFromArray(buf_.c_str() + sizeof(int32_t) + name_len,
-                       size - sizeof(int32_t)-name_len);
+    auto descriptor = p_msg_->GetDescriptor();
+    const Reflection* rf = p_msg_->GetReflection();
+    const FieldDescriptor* f_id = descriptor->FindFieldByName("id");
+    const FieldDescriptor* f_passwd = descriptor->FindFieldByName("passwd");
 
 
-    const Reflection* rf = p_ms->GetReflection();
-    const FieldDescriptor* f_id = p_ms->GetDescriptor()->FindFieldByName("id");
-    const FieldDescriptor* f_passwd = p_ms->GetDescriptor()->FindFieldByName("passwd");
-
-
-    int64_t id;
-    string passwd;
 
     try
     {
-        id = rf->GetInt64(*p_ms, f_id);
+        int64_t id = rf->GetInt64(*p_msg_, f_id);
         cout << id  << endl;
 
-        passwd = rf->GetString(*p_ms, f_passwd);
+        string passwd = rf->GetString(*p_msg_, f_passwd);
         cout << passwd << endl;
+
+        ImUser *pImUser = UserManager::get_instance()->get_user(id);
+        if (pImUser == nullptr)
+        {
+            pImUser = new ImUser;
+            pImUser->set_id(id);
+            pImUser->set_conn(shared_from_this());
+            pImUser->set_conn_id(get_conn_id());
+
+
+            UserManager::get_instance()->insert(pImUser);
+        }
+
+        IM::LoginAccount id_req;
+        id_req.set_id(id);
+        id_req.set_passwd("");
+
+
+        CMsg packet;
+        packet.encode((int)(M2D::READ_INFO), id_req);
+        send_to_db(packet);
+
     }
     catch (exception& e)
     {
@@ -130,65 +120,21 @@ void ClientConnection::handle_client_login(string buf_)
         cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
         cout << "# ERR: " << e.what() << endl;
     }
-
-
-    ImUser *pImUser = UserManager::get_instance()->get_user(id);
-    if (pImUser == nullptr)
-    {
-        pImUser = new ImUser;
-        pImUser->set_id(id);
-        pImUser->set_conn(shared_from_this());
-
-        UserManager::get_instance()->insert(pImUser);
-    }
-
-
-
-    MSG_LOGIN_ID login_id;
-    login_id.m_nId = id;
-
-    CMsg packet;
-    packet.set_msg_type(static_cast<int>(M2D::READ_INFO));
-    packet.serialization_data_Asio(login_id);
-    send_to_db(packet);
-
 }
 
 
-void ClientConnection::handle_chat(string buf_)
+void ClientConn::handle_chat(pb_message_ptr p_msg_)
 {
 
     GOOGLE_PROTOBUF_VERIFY_VERSION;
     using namespace google::protobuf;
 
-    cout << "buf: " << buf_.c_str() << "size：" << buf_.size()<<endl;
 
-    // namelen
-    int32_t name_len = AsInt32(buf_.c_str());
-    cout << "chat name_len: " << name_len << endl;
-
-    // type name
-    const char* chr_name = buf_.c_str() + sizeof(int32_t);
-    string type_name = string(chr_name, name_len);
-    cout << "type_name: " << type_name << endl;
-
-    shared_ptr<google::protobuf::Message> p_ms = CreateMessage(type_name);
-
-    if (p_ms == nullptr)
-    {
-        cout << "fail!" << endl;
-        return;
-    }
-
-    // 反序列化
-    int size = buf_.size();
-    p_ms->ParseFromArray(buf_.c_str() + sizeof(int32_t) + name_len, size - sizeof(int32_t)-name_len);
-
-
-    const Reflection* rf = p_ms->GetReflection();
-    const FieldDescriptor* f_send_id = p_ms->GetDescriptor()->FindFieldByName("send_id");
-    const FieldDescriptor* f_recv_id = p_ms->GetDescriptor()->FindFieldByName("recv_id");
-    const FieldDescriptor* f_content = p_ms->GetDescriptor()->FindFieldByName("content");
+    auto descriptor = p_msg_->GetDescriptor();
+    const Reflection* rf = p_msg_->GetReflection();
+    const FieldDescriptor* f_send_id = descriptor->FindFieldByName("send_id");
+    const FieldDescriptor* f_recv_id = descriptor->FindFieldByName("recv_id");
+    const FieldDescriptor* f_content = descriptor->FindFieldByName("content");
 
 
     int64_t send_id = 0, recv_id = 0;
@@ -196,23 +142,28 @@ void ClientConnection::handle_chat(string buf_)
 
     if(f_send_id)
     {
-        send_id = rf->GetInt64(*p_ms, f_send_id);
+        send_id = rf->GetInt64(*p_msg_, f_send_id);
     }
 
     if (f_recv_id)
     {
-        recv_id = rf->GetInt64(*p_ms, f_recv_id);
+        recv_id = rf->GetInt64(*p_msg_, f_recv_id);
     }
 
     if (f_content)
     {
-        content = rf->GetString(*p_ms, f_content);
+        content = rf->GetString(*p_msg_, f_content);
     }
 
     cout << "chat sendid: " << send_id
          << "chat recvid: " << recv_id
          << "content: "     << content << endl;
 
+
+    IM::ChatPkt chatPkt;
+    chatPkt.set_send_id(send_id);
+    chatPkt.set_recv_id(recv_id);
+    chatPkt.set_content(content);
 
     CMsg packet;
 
@@ -225,14 +176,7 @@ void ClientConnection::handle_chat(string buf_)
 
         if (conn != nullptr)
         {
-            IM::ChatPkt chatPkt;
-            chatPkt.set_send_id(send_id);
-            chatPkt.set_recv_id(recv_id);
-            chatPkt.set_content(content);
-
-
-            packet.set_msg_type(static_cast<int>(C2M::CHAT));
-            packet.serialization_data_protobuf(chatPkt);
+            packet.encode((int)C2M::CHAT, chatPkt);
             send(packet, conn->socket());
         }
         else
@@ -243,15 +187,8 @@ void ClientConnection::handle_chat(string buf_)
     }
     else
     {
-
-        Msg_chat chat_info;
-        chat_info.m_recv_id = recv_id;
-        chat_info.m_send_id = send_id;
-        chat_info.m_content = content;
-
-        packet.set_msg_type(static_cast<int>(M2R::DISPATCH_CHAT));
-        packet.serialization_data_Asio(chat_info);
         // 发送给routersvr
+        packet.encode((int)M2R::DISPATCH_CHAT, chatPkt);
         send_to_router(packet);
     }
 
@@ -260,45 +197,21 @@ void ClientConnection::handle_chat(string buf_)
 
 
 
-void ClientConnection::handle_fetch_contacts(string buf_)
+void ClientConn::handle_fetch_contacts(pb_message_ptr p_msg_)
 {
     GOOGLE_PROTOBUF_VERIFY_VERSION;
     using namespace google::protobuf;
 
-    cout << "buf: " << buf_.c_str() << "size：" << buf_.size()<<endl;
 
-    // namelen
-    int32_t name_len = AsInt32(buf_.c_str());
-    cout << "chat name_len: " << name_len << endl;
-
-    // type name
-    const char* chr_name = buf_.c_str() + sizeof(int32_t);
-    string type_name = string(chr_name, name_len);
-
-    cout << "type_name: " << type_name << endl;
+    const Reflection* rf = p_msg_->GetReflection();
+    const FieldDescriptor* f_user_id = p_msg_->GetDescriptor()->FindFieldByName("id");
 
 
-    shared_ptr<google::protobuf::Message> p_ms = CreateMessage(type_name);
+    int64_t id = 0;
 
-    if (p_ms == nullptr)
+    if (f_user_id != nullptr)
     {
-        cout << "fail!" << endl;
-        return;
-    }
-
-    // 反序列化
-    int size = buf_.size();
-    p_ms->ParseFromArray(buf_.c_str() + sizeof(int32_t) + name_len, size - sizeof(int32_t)-name_len);
-
-    const Reflection* rf = p_ms->GetReflection();
-    const FieldDescriptor* f_user_id = p_ms->GetDescriptor()->FindFieldByName("id");
-
-
-    int64_t nUserId = 0;
-
-    if (f_user_id)
-    {
-        nUserId = rf->GetInt64(*p_ms, f_user_id);
+        id = rf->GetInt64(*p_msg_, f_user_id);
     }
     else
     {
@@ -307,12 +220,13 @@ void ClientConnection::handle_fetch_contacts(string buf_)
     }
 
 
-    MSG_LOGIN_ID login_id;
-    login_id.m_nId = nUserId;
+    IM::LoginAccount id_req;
+    id_req.set_id(id);
+    id_req.set_passwd("");
+
 
     CMsg packet;
-    packet.set_msg_type(static_cast<int>(M2D::FETCH_CONTACTS));
-    packet.serialization_data_Asio(login_id);
+    packet.encode((int)M2D::FETCH_CONTACTS, id_req);
     send_to_db(packet);
 }
 
