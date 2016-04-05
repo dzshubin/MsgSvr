@@ -53,6 +53,7 @@ enum class M2R
 {
     DISPATCH_CHAT                        = 2000,
     LOGIN                                = 2001,
+    LOGOUT                               = 2002,
     ALLOCATE_PORT                        = 2003,
 };
 

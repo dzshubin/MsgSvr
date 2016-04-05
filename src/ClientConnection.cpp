@@ -10,6 +10,7 @@
 
 #include "chat.pb.h"
 #include "login.pb.h"
+#include "msg_update.pb.h"
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 
@@ -51,13 +52,38 @@ void ClientConn::on_connect()
 
 void ClientConn::on_disconnect()
 {
-    bool result = UserManager::get_instance()->remove(get_conn_id());
+    bool result = false;
+    int64_t user_id = 0;
+    tie(result, user_id) = UserManager::get_instance()->remove(get_conn_id());
+
+    if (result)
+    {
+         // 通知Router
+        IM::Account logout;
+        logout.set_id(user_id);
+
+        CMsg pkt;
+        pkt.encode((int)M2R::LOGOUT, logout);
+
+        send_to_router(pkt);
+
+
+        // 通知Login
+        IM::Update update;
+        update.set_count(UserManager::get_instance()->size());
+
+        CMsg loginPkt;
+        loginPkt.encode((int)M2L::UPDATE, update);
+
+        send_to_login(loginPkt);
+
+    }
 }
 
 
 void ClientConn::on_recv_msg(int type_, pb_message_ptr p_msg_)
 {
-    std::cout << "msg type: " <<type_<< std::endl;
+    std::cout << "Recv msg type: " <<type_<< std::endl;
 
     m_dispatcher.on_message(type_, p_msg_);
 }
@@ -72,20 +98,21 @@ void ClientConn::on_recv_msg(int type_, pb_message_ptr p_msg_)
 
 void ClientConn::handle_client_login(pb_message_ptr p_msg_)
 {
-
-
-    GOOGLE_PROTOBUF_VERIFY_VERSION;
-    using namespace google::protobuf;
-
-    auto descriptor = p_msg_->GetDescriptor();
-    const Reflection* rf = p_msg_->GetReflection();
-    const FieldDescriptor* f_id = descriptor->FindFieldByName("id");
-    const FieldDescriptor* f_passwd = descriptor->FindFieldByName("passwd");
-
-
-
     try
     {
+        GOOGLE_PROTOBUF_VERIFY_VERSION;
+        using namespace google::protobuf;
+
+        auto descriptor = p_msg_->GetDescriptor();
+        const Reflection* rf = p_msg_->GetReflection();
+        const FieldDescriptor* f_id = descriptor->FindFieldByName("id");
+        const FieldDescriptor* f_passwd = descriptor->FindFieldByName("passwd");
+
+
+        assert(f_id && f_id->type()==FieldDescriptor::TYPE_INT64);
+        assert(f_passwd && f_passwd->type()==FieldDescriptor::TYPE_STRING);
+
+
         int64_t id = rf->GetInt64(*p_msg_, f_id);
         cout << id  << endl;
 
@@ -104,7 +131,7 @@ void ClientConn::handle_client_login(pb_message_ptr p_msg_)
             UserManager::get_instance()->insert(pImUser);
         }
 
-        IM::LoginAccount id_req;
+        IM::Account id_req;
         id_req.set_id(id);
         id_req.set_passwd("");
 
@@ -125,72 +152,70 @@ void ClientConn::handle_client_login(pb_message_ptr p_msg_)
 
 void ClientConn::handle_chat(pb_message_ptr p_msg_)
 {
-
-    GOOGLE_PROTOBUF_VERIFY_VERSION;
-    using namespace google::protobuf;
-
-
-    auto descriptor = p_msg_->GetDescriptor();
-    const Reflection* rf = p_msg_->GetReflection();
-    const FieldDescriptor* f_send_id = descriptor->FindFieldByName("send_id");
-    const FieldDescriptor* f_recv_id = descriptor->FindFieldByName("recv_id");
-    const FieldDescriptor* f_content = descriptor->FindFieldByName("content");
-
-
-    int64_t send_id = 0, recv_id = 0;
-    string content;
-
-    if(f_send_id)
+    try
     {
-        send_id = rf->GetInt64(*p_msg_, f_send_id);
-    }
+        GOOGLE_PROTOBUF_VERIFY_VERSION;
+        using namespace google::protobuf;
 
-    if (f_recv_id)
-    {
-        recv_id = rf->GetInt64(*p_msg_, f_recv_id);
-    }
-
-    if (f_content)
-    {
-        content = rf->GetString(*p_msg_, f_content);
-    }
-
-    cout << "chat sendid: " << send_id
-         << "chat recvid: " << recv_id
-         << "content: "     << content << endl;
+        auto descriptor = p_msg_->GetDescriptor();
+        const Reflection* rf = p_msg_->GetReflection();
+        const FieldDescriptor* f_send_id = descriptor->FindFieldByName("send_id");
+        const FieldDescriptor* f_recv_id = descriptor->FindFieldByName("recv_id");
+        const FieldDescriptor* f_content = descriptor->FindFieldByName("content");
 
 
-    IM::ChatPkt chatPkt;
-    chatPkt.set_send_id(send_id);
-    chatPkt.set_recv_id(recv_id);
-    chatPkt.set_content(content);
+        assert(f_send_id && f_send_id->type()==FieldDescriptor::TYPE_INT64);
+        assert(f_recv_id && f_recv_id->type()==FieldDescriptor::TYPE_INT64);
+        assert(f_content && f_content->type()==FieldDescriptor::TYPE_STRING);
 
-    CMsg packet;
 
-    // 玩家在服务器里？
-    ImUser* pImUser = UserManager::get_instance()->get_user(recv_id);
-    if (pImUser)
-    {
-        // 转发
-        connection_ptr conn = pImUser->get_conn();
 
-        if (conn != nullptr)
+        int64_t send_id = rf->GetInt64(*p_msg_, f_send_id);
+        int64_t recv_id = rf->GetInt64(*p_msg_, f_recv_id);
+        string  content = rf->GetString(*p_msg_, f_content);
+
+
+        cout << "chat sendid: " << send_id
+             << "chat recvid: " << recv_id
+             << "content: "     << content << endl;
+
+
+        CMsg packet;
+
+        // 玩家在服务器里？
+        ImUser* pImUser = UserManager::get_instance()->get_user(recv_id);
+        if (pImUser)
         {
-            packet.encode((int)C2M::CHAT, chatPkt);
-            send(packet, conn->socket());
+            // 转发
+            connection_ptr conn = pImUser->get_conn();
+
+            if (conn != nullptr)
+            {
+                packet.encode((int)C2M::CHAT, *p_msg_);
+                send(packet, conn->socket());
+            }
+            else
+            {
+                //  玩家连接不存在！
+                cout << "error: " << __FUNCTION__ << ", user id: %d." << "conn isn't exists!" << endl;
+            }
         }
         else
         {
-            //  玩家连接不存在！
-            cout << "error: " << __FUNCTION__ << ", 玩家连接不存在！" << endl;
+            // 发送给routersvr
+            packet.encode((int)M2R::DISPATCH_CHAT, *p_msg_);
+            send_to_router(packet);
         }
+
     }
-    else
+    catch (exception& e)
     {
-        // 发送给routersvr
-        packet.encode((int)M2R::DISPATCH_CHAT, chatPkt);
-        send_to_router(packet);
+        cout << "# ERR: exception in " << __FILE__;
+        cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
+        cout << "# ERR: " << e.what() << endl;
     }
+
+
 
 }
 
@@ -199,35 +224,38 @@ void ClientConn::handle_chat(pb_message_ptr p_msg_)
 
 void ClientConn::handle_fetch_contacts(pb_message_ptr p_msg_)
 {
-    GOOGLE_PROTOBUF_VERIFY_VERSION;
-    using namespace google::protobuf;
-
-
-    const Reflection* rf = p_msg_->GetReflection();
-    const FieldDescriptor* f_user_id = p_msg_->GetDescriptor()->FindFieldByName("id");
-
-
-    int64_t id = 0;
-
-    if (f_user_id != nullptr)
+    try
     {
-        id = rf->GetInt64(*p_msg_, f_user_id);
+
+        GOOGLE_PROTOBUF_VERIFY_VERSION;
+        using namespace google::protobuf;
+
+
+        const Reflection* rf = p_msg_->GetReflection();
+        const FieldDescriptor* f_user_id = p_msg_->GetDescriptor()->FindFieldByName("id");
+
+
+        assert(f_user_id && f_user_id->type()==FieldDescriptor::TYPE_INT64);
+
+
+        int64_t id = rf->GetInt64(*p_msg_, f_user_id);
+
+        IM::Account id_req;
+        id_req.set_id(id);
+        id_req.set_passwd("");
+
+
+        CMsg packet;
+        packet.encode((int)M2D::FETCH_CONTACTS, id_req);
+        send_to_db(packet);
+
     }
-    else
+    catch (exception& e)
     {
-        cout << "f_user_id is null!" << endl;
-        return;
+        cout << "# ERR: exception in " << __FILE__;
+        cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
+        cout << "# ERR: " << e.what() << endl;
     }
-
-
-    IM::LoginAccount id_req;
-    id_req.set_id(id);
-    id_req.set_passwd("");
-
-
-    CMsg packet;
-    packet.encode((int)M2D::FETCH_CONTACTS, id_req);
-    send_to_db(packet);
 }
 
 

@@ -67,7 +67,7 @@ void RouterConn::allocate_port()
 
 void RouterConn::on_recv_msg(int type_, pb_message_ptr p_msg_)
 {
-    std::cout << "msg type: " << type_ << std::endl;
+    std::cout << "Recv msg type: " << type_ << std::endl;
     m_dispatcher.on_message(type_, p_msg_);
 }
 
@@ -81,19 +81,22 @@ void RouterConn::on_recv_msg(int type_, pb_message_ptr p_msg_)
 
 void RouterConn::handle_allocate_port(pb_message_ptr p_msg_)
 {
-    // 获得分配端口, 开始监听
-    GOOGLE_PROTOBUF_VERIFY_VERSION;
-    using namespace google::protobuf;
-
-    auto descriptor = p_msg_->GetDescriptor();
-    const Reflection* rf = p_msg_->GetReflection();
-    const FieldDescriptor* f_port = descriptor->FindFieldByName("port");
-
-
     try
     {
-        int32_t port = rf->GetInt32(*p_msg_, f_port);
 
+        // 获得分配端口, 开始监听
+        GOOGLE_PROTOBUF_VERIFY_VERSION;
+        using namespace google::protobuf;
+
+        auto descriptor = p_msg_->GetDescriptor();
+        const Reflection* rf = p_msg_->GetReflection();
+        const FieldDescriptor* f_port = descriptor->FindFieldByName("port");
+
+
+        assert(f_port && f_port->type()==FieldDescriptor::TYPE_INT32);
+
+
+        int32_t port = rf->GetInt32(*p_msg_, f_port);
 
         cout << "allocate port: " << port << endl;
         g->set_listen_port(port);
@@ -112,62 +115,68 @@ void RouterConn::handle_allocate_port(pb_message_ptr p_msg_)
 
 void RouterConn::handle_user_chat(pb_message_ptr p_msg_)
 {
-    GOOGLE_PROTOBUF_VERIFY_VERSION;
-    using namespace google::protobuf;
-
-
-    auto descriptor = p_msg_->GetDescriptor();
-    const Reflection* rf = p_msg_->GetReflection();
-    const FieldDescriptor* f_send_id = descriptor->FindFieldByName("send_id");
-    const FieldDescriptor* f_recv_id = descriptor->FindFieldByName("recv_id");
-    const FieldDescriptor* f_content = descriptor->FindFieldByName("content");
-
-
-    int64_t send_id = 0, recv_id = 0;
-    string content;
-
-    if(f_send_id)
+    try
     {
-        send_id = rf->GetInt64(*p_msg_, f_send_id);
-    }
-
-    if (f_recv_id)
-    {
-        recv_id = rf->GetInt64(*p_msg_, f_recv_id);
-    }
-
-    if (f_content)
-    {
-        content = rf->GetString(*p_msg_, f_content);
-    }
-
-    cout << "chat sendid: " << send_id
-         << "chat recvid: " << recv_id
-         << "content: "     << content << endl;
+        GOOGLE_PROTOBUF_VERIFY_VERSION;
+        using namespace google::protobuf;
 
 
-    // 玩家在这个服务器？
-    ImUser* pImUser = UserManager::get_instance()->get_user(recv_id);
-    if (pImUser != nullptr)
-    {
-        CMsg packet;
-        packet.encode(1900, *p_msg_);
+        auto descriptor = p_msg_->GetDescriptor();
+        const Reflection* rf = p_msg_->GetReflection();
+        const FieldDescriptor* f_send_id = descriptor->FindFieldByName("send_id");
+        const FieldDescriptor* f_recv_id = descriptor->FindFieldByName("recv_id");
+        const FieldDescriptor* f_content = descriptor->FindFieldByName("content");
 
-        // 找到链接
-        connection_ptr conn = pImUser->get_conn();
-        if (conn != nullptr)
+
+        assert(f_send_id && f_send_id->type()==FieldDescriptor::TYPE_INT64);
+        assert(f_recv_id && f_recv_id->type()==FieldDescriptor::TYPE_INT64);
+        assert(f_content && f_content->type()==FieldDescriptor::TYPE_STRING);
+
+
+
+        int64_t send_id = rf->GetInt64(*p_msg_, f_send_id);
+        int64_t recv_id = rf->GetInt64(*p_msg_, f_recv_id);
+        string  content = rf->GetString(*p_msg_, f_content);
+
+
+        cout << "chat sendid: " << send_id
+             << "chat recvid: " << recv_id
+             << "content: "     << content << endl;
+
+
+
+        // 玩家在这个服务器？
+        ImUser* pImUser = UserManager::get_instance()->get_user(recv_id);
+        if (pImUser != nullptr)
         {
-            send(packet, conn->socket());
+            CMsg packet;
+            packet.encode(1900, *p_msg_);
+
+            // 找到链接
+            connection_ptr conn = pImUser->get_conn();
+            if (conn != nullptr)
+            {
+                send(packet, conn->socket());
+            }
+            else
+            {
+                cout << "error: " << __FUNCTION__ <<  "Recv User(" << recv_id << ") conn isn't exists!" << endl;
+            }
         }
         else
         {
-            cout << "error: " << __FUNCTION__ <<  " ,玩家连接不存在！" << endl;
+            cout << "error: " << __FUNCTION__ << " Recv User(" << recv_id << ") isn't exists!" << endl;
         }
+
+
     }
-    else
+    catch (exception& e)
     {
-        cout << "error: " << __FUNCTION__ << " 玩家不存在" << endl;
+        cout << "# ERR: exception in " << __FILE__;
+        cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
+        cout << "# ERR: " << e.what() << endl;
     }
+
 
 }
 

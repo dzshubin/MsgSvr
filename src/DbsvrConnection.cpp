@@ -69,23 +69,33 @@ void DBSvrConn::on_recv_msg(int type_, pb_message_ptr p_msg_)
 void DBSvrConn::handle_fetch_info(pb_message_ptr p_msg_)
 {
 
-    GOOGLE_PROTOBUF_VERIFY_VERSION;
-    using namespace google::protobuf;
-
-    auto descriptor = p_msg_->GetDescriptor();
-    const Reflection* rf = p_msg_->GetReflection();
-    const FieldDescriptor* f_id = descriptor->FindFieldByName("id");
-    const FieldDescriptor* f_name = descriptor->FindFieldByName("name");
-    const FieldDescriptor* f_nick_name = descriptor->FindFieldByName("nick_name");
-    const FieldDescriptor* f_sex = descriptor->FindFieldByName("sex");
-
-
     try
     {
-        int64_t id = rf->GetInt64(*p_msg_, f_id);
-        string name = rf->GetString(*p_msg_, f_name);
-        string nick_name = rf->GetString(*p_msg_, f_nick_name);
-        string sex = rf->GetString(*p_msg_, f_sex);
+
+        GOOGLE_PROTOBUF_VERIFY_VERSION;
+        using namespace google::protobuf;
+
+        auto descriptor = p_msg_->GetDescriptor();
+        const Reflection* rf = p_msg_->GetReflection();
+
+        const FieldDescriptor* f_id         = descriptor->FindFieldByName("id");
+        const FieldDescriptor* f_name       = descriptor->FindFieldByName("name");
+        const FieldDescriptor* f_sex        = descriptor->FindFieldByName("sex");
+        const FieldDescriptor* f_nick_name  = descriptor->FindFieldByName("nick_name");
+
+
+
+        assert(f_id         && f_id->type()==FieldDescriptor::TYPE_INT64);
+        assert(f_name       && f_name->type()==FieldDescriptor::TYPE_STRING);
+        assert(f_sex        && f_sex->type()==FieldDescriptor::TYPE_STRING);
+        assert(f_nick_name  && f_nick_name->type()==FieldDescriptor::TYPE_STRING);
+
+
+
+        int64_t id          = rf->GetInt64(*p_msg_, f_id);
+        string name         = rf->GetString(*p_msg_, f_name);
+        string sex          = rf->GetString(*p_msg_, f_sex);
+        string nick_name    = rf->GetString(*p_msg_, f_nick_name);
 
 
         ImUser* pImUser = UserManager::get_instance()->get_user(id);
@@ -115,7 +125,7 @@ void DBSvrConn::handle_fetch_info(pb_message_ptr p_msg_)
 
 
         // 向router发送用户上线的消息
-        IM::LoginAccount user_login;
+        IM::Account user_login;
         user_login.set_id(id);
         user_login.set_passwd("");
 
@@ -158,29 +168,25 @@ void DBSvrConn::handle_fetch_contacts(pb_message_ptr p_msg_)
         const FieldDescriptor* f_contacts = descriptor->FindFieldByName("contacts");
 
 
+        assert(f_req_id   && f_req_id->type()==FieldDescriptor::TYPE_INT64);
+        assert(f_contacts && f_contacts->is_repeated());
+
 
         int64_t id = rf->GetInt64(*p_msg_, f_req_id);
 
-        if(f_contacts->is_repeated())
+
+        CMsg packet;
+        packet.encode((int)C2M::FETCH_CONTACTS, *p_msg_);
+
+
+        ImUser* pImUser = UserManager::get_instance()->get_user(id);
+        if (pImUser == nullptr)
         {
-
-            CMsg packet;
-            packet.encode((int)C2M::FETCH_CONTACTS, *p_msg_);
-
-
-            ImUser* pImUser = UserManager::get_instance()->get_user(id);
-            if (pImUser == nullptr)
-            {
-                cout << "error! pImuser is null! user_id: "<< id << endl;
-            }
-            else
-            {
-                send(packet, pImUser->get_conn()->socket());
-            }
+            cout << "error! pImuser is null! user_id: "<< id << endl;
         }
         else
         {
-            cout << "error! ProtoBuf Type error!" << endl;
+            send(packet, pImUser->get_conn()->socket());
         }
     }
     catch (exception& e)

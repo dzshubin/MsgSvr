@@ -2,6 +2,7 @@
 #define USERMANAGER_HPP_INCLUDED
 
 #include <set>
+#include <tuple>
 #include <iostream>
 #include <algorithm>
 
@@ -19,7 +20,7 @@ public:
 
     void remove(ImUser*);
     // 删除与指定connid的玩家
-    bool remove(int conn_id);
+    std::tuple<bool, int64_t> remove(int conn_id);
     // 通过玩家id获得玩家信息
     ImUser* get_user(int64_t id_);
 

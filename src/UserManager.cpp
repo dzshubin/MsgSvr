@@ -20,7 +20,7 @@ void UserManager::remove(ImUser* pUser_)
     cout << "now users size: " << m_users.size() << endl;
 }
 
-bool UserManager::remove(int conn_id_)
+std::tuple<bool, int64_t> UserManager::remove(int conn_id_)
 {
     auto it = find_if(m_users.begin(), m_users.end(),
         [&] (ImUser* pUser)
@@ -31,18 +31,19 @@ bool UserManager::remove(int conn_id_)
 
     if (it == m_users.end())
     {
-        return false;
+        return std::make_tuple(false, 0);
     }
+
     else
     {
-
-        cout << "user disconnect! user id: " << ((*it)->get_id())  << endl;
+        int64_t id = (*it)->get_id();
+        cout << "user disconnect! user id: " << id  << endl;
 
         m_users.erase(it);
         (*it)->free_conn();
         delete (*it);
 
-        return true;
+        return std::make_tuple(true, id);
     }
 }
 
