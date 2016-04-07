@@ -1,4 +1,4 @@
-#include "LoginConnection.hpp"
+#include "LoginConn.hpp"
 #include "ClientMsgTypeDefine.hpp"
 #include "Server.h"
 #include "MsgStruct.hpp"

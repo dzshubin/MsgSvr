@@ -1,10 +1,10 @@
 
-#include "ClientConnection.hpp"
-#include "LoginConnection.hpp"
+#include "ClientConn.hpp"
+#include "LoginConn.hpp"
 #include "MsgStruct.hpp"
-#include "DbsvrConnection.hpp"
+#include "DbsvrConn.hpp"
 #include "ClientMsgTypeDefine.hpp"
-#include "RouterConnection.hpp"
+#include "RouterConn.hpp"
 #include "User.hpp"
 #include "UserManager.hpp"
 

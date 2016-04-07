@@ -1,8 +1,8 @@
 
 
-#include "DbsvrConnection.hpp"
-#include "RouterConnection.hpp"
-#include "LoginConnection.hpp"
+#include "DbsvrConn.hpp"
+#include "RouterConn.hpp"
+#include "LoginConn.hpp"
 #include "ClientMsgTypeDefine.hpp"
 #include "MsgStruct.hpp"
 #include "UserManager.hpp"

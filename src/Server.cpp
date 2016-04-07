@@ -1,8 +1,8 @@
 #include "Server.h"
-#include "RouterConnection.hpp"
-#include "ClientConnection.hpp"
-#include "LoginConnection.hpp"
-#include "DbsvrConnection.hpp"
+#include "RouterConn.hpp"
+#include "ClientConn.hpp"
+#include "LoginConn.hpp"
+#include "DbsvrConn.hpp"
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/asio/deadline_timer.hpp>
