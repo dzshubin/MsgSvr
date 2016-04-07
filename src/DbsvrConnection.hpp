@@ -17,7 +17,7 @@ public:
 private:
     void handle_fetch_info(pb_message_ptr );
     void handle_fetch_contacts(pb_message_ptr);
-
+    void handle_fetch_offline_message(pb_message_ptr);
 
 private:
     MessageDispatcher m_dispatcher;

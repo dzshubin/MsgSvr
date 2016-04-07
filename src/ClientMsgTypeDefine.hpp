@@ -21,7 +21,7 @@ enum class C2M
      * @parm       id_ : 玩家id
      * @retruen    res : 登陆结果 0-成功  1-失败
      */
-    LOGIN                   = 1000,
+    LOGIN                           = 1000,
 
     /*
      * 聊天
@@ -29,7 +29,7 @@ enum class C2M
      * @parm recv_id    : 接受者id
      * @parm content    : 发送内容
      */
-    CHAT                    = 1001,
+    CHAT                            = 1001,
 
     /*
      * 请求联系人列表
@@ -42,7 +42,15 @@ enum class C2M
      *              string  nick_name   // 昵称
      *          ]
      */
-    FETCH_CONTACTS          = 1002,
+    FETCH_CONTACTS                  = 1002,
+
+
+
+
+
+
+    // 以下为服务器主动发给客户端的消息
+    SEND_OFFLINE_MESSAGE            = 10000,
 
 };
 
@@ -84,6 +92,17 @@ enum class M2D
      * 读取指定用户id的联系人
      */
     FETCH_CONTACTS              = 5001,
+    /*
+     * 请求离线消息
+     * @parm    user_id
+     * @return  int 总消息数,
+     *          循环
+     *          [
+     *              int     id,         // 发送者id
+     *              string  content,       // 内容
+     *          ]
+     */
+     FETCH_OFFLINE_MESSAGE              = 5002,
 };
 
 

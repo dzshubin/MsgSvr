@@ -36,6 +36,9 @@ void DBSvrConn::on_connect()
     m_dispatcher.register_message_callback((int)M2D::FETCH_CONTACTS,
         bind(&DBSvrConn::handle_fetch_contacts, this, std::placeholders::_1));
 
+    m_dispatcher.register_message_callback((int)M2D::FETCH_OFFLINE_MESSAGE,
+        bind(&DBSvrConn::handle_fetch_offline_message, this, std::placeholders::_1));
+
     g_dbsvr_handler = this;
     read_head();
 }
@@ -127,7 +130,6 @@ void DBSvrConn::handle_fetch_info(pb_message_ptr p_msg_)
         // 向router发送用户上线的消息
         IM::Account user_login;
         user_login.set_id(id);
-        user_login.set_passwd("");
 
         CMsg routePkt;
         routePkt.encode((int)M2R::LOGIN, user_login);
@@ -197,6 +199,50 @@ void DBSvrConn::handle_fetch_contacts(pb_message_ptr p_msg_)
     }
 
 }
+
+
+
+void DBSvrConn::handle_fetch_offline_message(pb_message_ptr p_msg_)
+{
+    try
+    {
+        GOOGLE_PROTOBUF_VERIFY_VERSION;
+        using namespace google::protobuf;
+
+        auto descriptor = p_msg_->GetDescriptor();
+        const Reflection* rf = p_msg_->GetReflection();
+        const FieldDescriptor* f_req_id = descriptor->FindFieldByName("user_id");
+        const FieldDescriptor* f_messages = descriptor->FindFieldByName("messages");
+
+
+        assert(f_req_id   && f_req_id->type()==FieldDescriptor::TYPE_INT64);
+        assert(f_messages && f_messages->is_repeated());
+
+        int64_t req_id = rf->GetInt64(*p_msg_, f_req_id);
+
+
+        ImUser* pImUser = UserManager::get_instance()->get_user(req_id);
+        if (pImUser == nullptr)
+        {
+            cout << "error! pImuser is null! user_id: "<< req_id << endl;
+        }
+        else
+        {
+            CMsg packet;
+            packet.encode((int)C2M::SEND_OFFLINE_MESSAGE, *p_msg_);
+            send(packet, pImUser->get_conn()->socket());
+        }
+    }
+    catch (exception& e)
+    {
+        cout << "# ERR: exception in " << __FILE__;
+        cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
+        cout << "# ERR: " << e.what() << endl;
+    }
+
+}
+
+
 
 
 

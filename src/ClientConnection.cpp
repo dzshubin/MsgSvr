@@ -131,14 +131,24 @@ void ClientConn::handle_client_login(pb_message_ptr p_msg_)
             UserManager::get_instance()->insert(pImUser);
         }
 
+
+        // 读取离线消息
+        IM::Account req_id;
+        req_id.set_id(id);
+
+        CMsg fetch_message_pkt;
+        fetch_message_pkt.encode((int)M2D::FETCH_OFFLINE_MESSAGE, req_id);
+        send_to_db(fetch_message_pkt);
+
+
+
+        // 读取玩家信息
         IM::Account id_req;
         id_req.set_id(id);
-        id_req.set_passwd("");
 
-
-        CMsg packet;
-        packet.encode((int)(M2D::READ_INFO), id_req);
-        send_to_db(packet);
+        CMsg fetch_info_pkt;
+        fetch_info_pkt.encode((int)(M2D::READ_INFO), id_req);
+        send_to_db(fetch_info_pkt);
 
     }
     catch (exception& e)
@@ -181,6 +191,15 @@ void ClientConn::handle_chat(pb_message_ptr p_msg_)
 
 
         CMsg packet;
+        IM::ChatPkt chat;
+        chat.set_send_id(send_id);
+        chat.set_recv_id(recv_id);
+        chat.set_content(move(content));
+        // 设置发送时间
+        chat.set_send_time(get_cur_time().c_str());
+
+
+
 
         // 玩家在服务器里？
         ImUser* pImUser = UserManager::get_instance()->get_user(recv_id);
@@ -191,7 +210,7 @@ void ClientConn::handle_chat(pb_message_ptr p_msg_)
 
             if (conn != nullptr)
             {
-                packet.encode((int)C2M::CHAT, *p_msg_);
+                packet.encode((int)C2M::CHAT, chat);
                 send(packet, conn->socket());
             }
             else
@@ -203,7 +222,7 @@ void ClientConn::handle_chat(pb_message_ptr p_msg_)
         else
         {
             // 发送给routersvr
-            packet.encode((int)M2R::DISPATCH_CHAT, *p_msg_);
+            packet.encode((int)M2R::DISPATCH_CHAT, chat);
             send_to_router(packet);
         }
 
@@ -242,7 +261,6 @@ void ClientConn::handle_fetch_contacts(pb_message_ptr p_msg_)
 
         IM::Account id_req;
         id_req.set_id(id);
-        id_req.set_passwd("");
 
 
         CMsg packet;
