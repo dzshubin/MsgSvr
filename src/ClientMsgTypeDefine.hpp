@@ -80,29 +80,34 @@ enum class M2L
 };
 
 
-// 消息svr发给DBSVr
+// 消息服务器与路由服务器之间通信
 enum class M2D
 {
     /*
      * 通过用户id读取用户信息
      */
-    READ_INFO                   = 5000,
+    READ_INFO                               = 5000,
 
     /*
      * 读取指定用户id的联系人
      */
-    FETCH_CONTACTS              = 5001,
+    FETCH_CONTACTS                          = 5001,
     /*
      * 请求离线消息
      * @parm    user_id
      * @return  int 总消息数,
      *          循环
      *          [
-     *              int     id,         // 发送者id
+     *              int     id,            // 发送者id
      *              string  content,       // 内容
      *          ]
      */
-     FETCH_OFFLINE_MESSAGE              = 5002,
+     FETCH_OFFLINE_MESSAGE                  = 5002,
+
+     /*
+      *  保存历史信息
+      */
+     SAVE_TO_HISTORY                        = 5003,
 };
 
 

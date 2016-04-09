@@ -212,7 +212,7 @@ void DBSvrConn::handle_fetch_offline_message(pb_message_ptr p_msg_)
         auto descriptor = p_msg_->GetDescriptor();
         const Reflection* rf = p_msg_->GetReflection();
         const FieldDescriptor* f_req_id = descriptor->FindFieldByName("user_id");
-        const FieldDescriptor* f_messages = descriptor->FindFieldByName("messages");
+        const FieldDescriptor* f_messages = descriptor->FindFieldByName("chat_message");
 
 
         assert(f_req_id   && f_req_id->type()==FieldDescriptor::TYPE_INT64);
@@ -231,6 +231,13 @@ void DBSvrConn::handle_fetch_offline_message(pb_message_ptr p_msg_)
             CMsg packet;
             packet.encode((int)C2M::SEND_OFFLINE_MESSAGE, *p_msg_);
             send(packet, pImUser->get_conn()->socket());
+
+
+            // 删除离线消息
+            // 保存为历史消息
+            CMsg history_req;
+            history_req.encode((int)M2D::SAVE_TO_HISTORY, *p_msg_);
+            send(history_req);
         }
     }
     catch (exception& e)
