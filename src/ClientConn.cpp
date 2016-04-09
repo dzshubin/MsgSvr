@@ -11,6 +11,8 @@
 #include "chat.pb.h"
 #include "login.pb.h"
 #include "msg_update.pb.h"
+#include "message_cach.pb.h"
+
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 
@@ -201,6 +203,7 @@ void ClientConn::handle_chat(pb_message_ptr p_msg_)
 
 
 
+
         // 玩家在服务器里？
         ImUser* pImUser = UserManager::get_instance()->get_user(recv_id);
         if (pImUser)
@@ -210,8 +213,26 @@ void ClientConn::handle_chat(pb_message_ptr p_msg_)
 
             if (conn != nullptr)
             {
+                // 保存为历史消息
+                IM::MessageCach msg_cach;
+                msg_cach.set_user_id(recv_id);
+
+                IM::ChatPkt* pChatPkt =  msg_cach.add_chat_message();
+                pChatPkt->set_send_id(send_id);
+                pChatPkt->set_content(chat.content());
+                pChatPkt->set_send_time(chat.send_time());
+
+
+                // 发送聊天消息
                 packet.encode((int)C2M::CHAT, chat);
                 send(packet, conn->socket());
+
+
+
+                CMsg history_pkt;
+                history_pkt.encode((int)M2D::SAVE_TO_HISTORY, msg_cach);
+                send_to_db(history_pkt);
+
             }
             else
             {
