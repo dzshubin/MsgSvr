@@ -44,14 +44,22 @@ enum class C2M
      */
     FETCH_CONTACTS                  = 1002,
 
-
+    /*
+     *
+     * 请求加入某个频道
+     * @parm user_id    : 用户id
+     * @parm channel_id : 频道id
+     *
+     */
+    JOIN_CHANNEL                    = 1003,
 
 
 
 
     // 以下为服务器主动发给客户端的消息
     SEND_OFFLINE_MESSAGE            = 10000,
-
+    SEND_CHANNELS                   = 10001,
+    SEND_CHANNEL_MEMBERS            = 10002,
 };
 
 
@@ -59,28 +67,28 @@ enum class C2M
 // msgsvr <--> routersvr
 enum class M2R
 {
-    DISPATCH_CHAT                        = 2000,
-    LOGIN                                = 2001,
-    LOGOUT                               = 2002,
-    ALLOCATE_PORT                        = 2003,
+    DISPATCH_CHAT                           = 2000,
+    LOGIN                                   = 2001,
+    LOGOUT                                  = 2002,
+    ALLOCATE_PORT                           = 2003,
 };
 
 // routersvr --> msgsvr
 enum class R2M
 {
-    RECV_CHAT                   = 3000,
+    RECV_CHAT                               = 3000,
 };
 
 
 // 消息svr发给登陆SVr
 enum class M2L
 {
-    REGISTER                            = 7000,
-    UPDATE                              = 7001,     // 更新当前消息服务器总人数
+    REGISTER                                = 7000,
+    UPDATE                                  = 7001,     // 更新当前消息服务器总人数
 };
 
 
-// 消息服务器与路由服务器之间通信
+// 消息服务器与数据库服务器之间通信
 enum class M2D
 {
     /*
@@ -108,6 +116,17 @@ enum class M2D
       *  保存历史信息
       */
      SAVE_TO_HISTORY                        = 5003,
+
+     /*
+      * 请求频道信息
+      */
+     FETCH_CHANNELS                         = 5010,
+
+     /*
+      * 请求加入频道
+      */
+     JOIN_CHANNEL                           = 5011,
+
 };
 
 
