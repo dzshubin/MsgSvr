@@ -22,9 +22,14 @@ public:
 
 
 private:
+    /// 玩家登陆
     void handle_client_login(pb_message_ptr);
+    /// 聊天
     void handle_chat(pb_message_ptr);
+    /// 拉取联系人信息
     void handle_fetch_contacts(pb_message_ptr);
+    /// 玩家加入频道
+    void handle_join_channel(pb_message_ptr);
 
 
 private:

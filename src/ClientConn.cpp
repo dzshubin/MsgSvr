@@ -35,14 +35,17 @@ ClientConn::ClientConn(io_service& io_)
 void ClientConn::on_connect()
 {
     m_dispatcher.register_message_callback((int)C2M::LOGIN,
-        bind(&ClientConn::handle_client_login, this, std::placeholders::_1));
-
+        bind(&ClientConn::handle_client_login,          this, std::placeholders::_1));
 
     m_dispatcher.register_message_callback((int)C2M::CHAT,
-        bind(&ClientConn::handle_chat, this, std::placeholders::_1));
+        bind(&ClientConn::handle_chat,                  this, std::placeholders::_1));
 
     m_dispatcher.register_message_callback((int)C2M::FETCH_CONTACTS,
-        bind(&ClientConn::handle_fetch_contacts, this, std::placeholders::_1));
+        bind(&ClientConn::handle_fetch_contacts,        this, std::placeholders::_1));
+
+    m_dispatcher.register_message_callback((int)C2M::JOIN_CHANNEL,
+        bind(&ClientConn::handle_join_channel,          this, std::placeholders::_1));
+
 
 
 
@@ -143,6 +146,11 @@ void ClientConn::handle_client_login(pb_message_ptr p_msg_)
         send_to_db(fetch_message_pkt);
 
 
+        // 读取频道离线消息
+
+
+
+
 
         // 读取玩家信息
         IM::Account id_req;
@@ -151,6 +159,9 @@ void ClientConn::handle_client_login(pb_message_ptr p_msg_)
         CMsg fetch_info_pkt;
         fetch_info_pkt.encode((int)(M2D::READ_INFO), id_req);
         send_to_db(fetch_info_pkt);
+
+
+
 
     }
     catch (exception& e)
@@ -297,11 +308,27 @@ void ClientConn::handle_fetch_contacts(pb_message_ptr p_msg_)
     }
 }
 
+void ClientConn::handle_join_channel(pb_message_ptr p_msg_)
+{
+    TRY
 
 
+    const Reflection* rf = p_msg_->GetReflection();
+
+    const FieldDescriptor* f_user_id    = p_msg_->GetDescriptor()->FindFieldByName("user_id");
+    const FieldDescriptor* f_channel_id = p_msg_->GetDescriptor()->FindFieldByName("channel_id");
 
 
+    assert(f_user_id    && f_user_id->type()    ==FieldDescriptor::TYPE_INT64);
+    assert(f_channel_id && f_channel_id->type() ==FieldDescriptor::TYPE_INT32);
 
+    CMsg packet;
+    packet.encode((int)M2D::JOIN_CHANNEL, *p_msg_);
+    send_to_db(packet);
+
+    CATCH
+
+}
 
 
 

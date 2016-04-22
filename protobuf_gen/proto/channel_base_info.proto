@@ -1,0 +1,18 @@
+syntax = "proto3";
+package IM;
+
+
+// 频道集合
+message ChannelBaseInfo
+{
+    repeated ChannelBase channel_base = 1;
+}
+
+
+// 单个频道实体
+message ChannelBase
+{
+    int32  channel_id	= 1;
+    string channel_name = 2;
+    bool   is_inside 	= 3;	// 玩家是否加入了该频道
+}

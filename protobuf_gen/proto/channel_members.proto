@@ -1,0 +1,17 @@
+syntax="proto3";
+package IM;
+
+
+import "contacts.proto";
+
+message ChannelMembersInfo
+{
+	repeated ChannelMember channel_member = 1;
+}
+
+
+message ChannelMember
+{
+    int32 	channel_id			= 1;	// 频道id
+	repeated User users			= 2; 	// 所属频道的成员
+}

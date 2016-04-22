@@ -7,11 +7,13 @@
 #include "MsgStruct.hpp"
 #include "UserManager.hpp"
 #include "User.hpp"
+#include "ChannelManager.hpp"
 
 
 #include "contacts.pb.h"
 #include "login.pb.h"
 #include "msg_update.pb.h"
+#include "channel.pb.h"
 
 
 #include <google/protobuf/message.h>
@@ -31,15 +33,28 @@ void DBSvrConn::on_connect()
 {
 
     m_dispatcher.register_message_callback((int)M2D::READ_INFO,
-        bind(&DBSvrConn::handle_fetch_info, this, std::placeholders::_1));
+        bind(&DBSvrConn::handle_fetch_info,             this, std::placeholders::_1));
 
     m_dispatcher.register_message_callback((int)M2D::FETCH_CONTACTS,
-        bind(&DBSvrConn::handle_fetch_contacts, this, std::placeholders::_1));
+        bind(&DBSvrConn::handle_fetch_contacts,         this, std::placeholders::_1));
 
     m_dispatcher.register_message_callback((int)M2D::FETCH_OFFLINE_MESSAGE,
-        bind(&DBSvrConn::handle_fetch_offline_message, this, std::placeholders::_1));
+        bind(&DBSvrConn::handle_fetch_offline_message,  this, std::placeholders::_1));
+
+    m_dispatcher.register_message_callback((int)M2D::FETCH_CHANNELS,
+        bind(&DBSvrConn::handle_fetch_channels,         this, std::placeholders::_1));
+
+    m_dispatcher.register_message_callback((int)M2D::JOIN_CHANNEL,
+        bind(&DBSvrConn::handle_join_channel,           this, std::placeholders::_1));
+
 
     g_dbsvr_handler = this;
+
+
+
+    // 加载频道信息
+    LoadChannel();
+
     read_head();
 }
 
@@ -109,6 +124,7 @@ void DBSvrConn::handle_fetch_info(pb_message_ptr p_msg_)
             return;
         }
 
+
         pImUser->set_id(id);
         pImUser->set_name(name);
         pImUser->set_nick_name(nick_name);
@@ -124,6 +140,28 @@ void DBSvrConn::handle_fetch_info(pb_message_ptr p_msg_)
         CMsg packet;
         packet.encode((int)C2M::LOGIN, user);
         send(packet, pImUser->get_conn()->socket());
+
+
+
+        // 推送频道信息
+        IM::ChannelBaseInfo base_info;
+        ChannelManager::get_instance()->LoadChannelBaseInfo(id, base_info);
+
+        CMsg channel_pkt;
+        channel_pkt.encode((int)C2M::SEND_CHANNELS, base_info);
+        send(channel_pkt, pImUser->get_conn()->socket());
+
+
+
+        IM::ChannelMembersInfo members;
+        ChannelManager::get_instance()->LoadChannelMembers(members);
+
+        CMsg member_pkt;
+        member_pkt.encode((int)C2M::SEND_CHANNEL_MEMBERS, members);
+        send(member_pkt, pImUser->get_conn()->socket());
+
+
+
 
 
 
@@ -204,54 +242,159 @@ void DBSvrConn::handle_fetch_contacts(pb_message_ptr p_msg_)
 
 void DBSvrConn::handle_fetch_offline_message(pb_message_ptr p_msg_)
 {
-    try
+    TRY
+    auto descriptor = p_msg_->GetDescriptor();
+    const Reflection* rf = p_msg_->GetReflection();
+    const FieldDescriptor* f_req_id = descriptor->FindFieldByName("user_id");
+    const FieldDescriptor* f_messages = descriptor->FindFieldByName("chat_message");
+
+
+    assert(f_req_id   && f_req_id->type()==FieldDescriptor::TYPE_INT64);
+    assert(f_messages && f_messages->is_repeated());
+
+    int64_t req_id = rf->GetInt64(*p_msg_, f_req_id);
+
+
+    ImUser* pImUser = UserManager::get_instance()->get_user(req_id);
+    if (pImUser == nullptr)
     {
-        GOOGLE_PROTOBUF_VERIFY_VERSION;
-        using namespace google::protobuf;
-
-        auto descriptor = p_msg_->GetDescriptor();
-        const Reflection* rf = p_msg_->GetReflection();
-        const FieldDescriptor* f_req_id = descriptor->FindFieldByName("user_id");
-        const FieldDescriptor* f_messages = descriptor->FindFieldByName("chat_message");
-
-
-        assert(f_req_id   && f_req_id->type()==FieldDescriptor::TYPE_INT64);
-        assert(f_messages && f_messages->is_repeated());
-
-        int64_t req_id = rf->GetInt64(*p_msg_, f_req_id);
+        cout << "error! pImuser is null! user_id: "<< req_id << endl;
+    }
+    else
+    {
+        CMsg packet;
+        packet.encode((int)C2M::SEND_OFFLINE_MESSAGE, *p_msg_);
+        send(packet, pImUser->get_conn()->socket());
 
 
-        ImUser* pImUser = UserManager::get_instance()->get_user(req_id);
-        if (pImUser == nullptr)
+        // 删除离线消息
+        // 保存为历史消息
+        CMsg history_req;
+        history_req.encode((int)M2D::SAVE_TO_HISTORY, *p_msg_);
+        send(history_req);
+    }
+    CATCH
+}
+
+
+void DBSvrConn::handle_fetch_channels(pb_message_ptr p_msg_)
+{
+    TRY
+
+
+    auto descriptor = p_msg_->GetDescriptor();
+    const Reflection* rf = p_msg_->GetReflection();
+    const FieldDescriptor* f_channels = descriptor->FindFieldByName("channels");
+
+    assert(f_channels && f_channels->is_repeated());
+
+
+    RepeatedPtrField<IM::Channel> channels = rf->GetRepeatedPtrField<IM::Channel>(*p_msg_, f_channels);
+
+
+    auto it = channels.begin();
+    for(; it != channels.end(); ++it)
+    {
+        int64_t channel_id  = it->id();
+        string channel_name = it->name();
+
+        ChannelManager::get_instance()->CreateChannel(channel_id, move(channel_name));
+
+        for(int i = 0; i < it->user_size(); i++)
         {
-            cout << "error! pImuser is null! user_id: "<< req_id << endl;
+            IM::User user = it->user(i);
+            ChannelManager::get_instance()->JoinChannel(channel_id, user);
+        }
+    }
+
+    CATCH
+}
+
+
+void DBSvrConn::handle_join_channel(pb_message_ptr p_msg_)
+{
+    TRY
+
+
+    auto descriptor = p_msg_->GetDescriptor();
+    const Reflection* rf = p_msg_->GetReflection();
+    const FieldDescriptor* f_user_id    = descriptor->FindFieldByName("user_id");
+    const FieldDescriptor* f_channel_id = descriptor->FindFieldByName("channel_id");
+    const FieldDescriptor* f_result     = descriptor->FindFieldByName("result");
+
+
+
+
+    assert(f_user_id    && f_user_id->type()    ==FieldDescriptor::TYPE_INT64);
+    assert(f_result     && f_result->type()     ==FieldDescriptor::TYPE_INT32);
+    assert(f_channel_id && f_channel_id->type() ==FieldDescriptor::TYPE_INT32);
+
+
+
+
+    int64_t req_id = rf->GetInt64(*p_msg_, f_user_id);
+    ImUser* pImUser = UserManager::get_instance()->get_user(req_id);
+    if (pImUser == nullptr)
+    {
+        cout << "error! pImuser is null! user_id: "<< req_id << endl;
+    }
+    else
+    {
+        if (f_result)
+        {
+            // 修改内存
+            ChannelManager::get_instance()->JoinChannel(channel_id, *pImUser);
         }
         else
         {
-            CMsg packet;
-            packet.encode((int)C2M::SEND_OFFLINE_MESSAGE, *p_msg_);
-            send(packet, pImUser->get_conn()->socket());
-
-
-            // 删除离线消息
-            // 保存为历史消息
-            CMsg history_req;
-            history_req.encode((int)M2D::SAVE_TO_HISTORY, *p_msg_);
-            send(history_req);
+            // 数据库插入失败
         }
+
+
+        CMsg packet;
+        packet.encode((int)C2M::JOIN_CHANNEL, *p_msg_);
+        send(packet, pImUser->get_conn()->socket());
     }
-    catch (exception& e)
-    {
-        cout << "# ERR: exception in " << __FILE__;
-        cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
-        cout << "# ERR: " << e.what() << endl;
-    }
+
+
+    CATCH
 
 }
 
 
 
 
+
+/****************************************
+ *  private function
+ *
+ */
+
+
+
+
+void DBSvrConn::LoadChannel()
+{
+    IM::Account a;
+
+
+    CMsg packet;
+    packet.encode((int)M2D::FETCH_CHANNELS, a);
+
+
+    send_to_db(packet);
+}
+
+
+
+
+
+
+
+/****************************************
+ *
+ *
+ */
 
 void send_to_db (CMsg& msg)
 {
