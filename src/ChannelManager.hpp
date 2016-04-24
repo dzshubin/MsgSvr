@@ -39,6 +39,8 @@ public:
     void LoadChannelBaseInfo(int64_t, IM::ChannelBaseInfo&);
     // 加载频道成员信息
     void LoadChannelMembers(IM::ChannelMembersInfo&);
+    // 更新频道信息
+    bool UpdateUser(int, const IM::User&);
 
 private:
     ChannelManager();

@@ -159,6 +159,44 @@ void ChannelManager::LoadChannelMembers(IM::ChannelMembersInfo& members)
 }
 
 
+bool ChannelManager::UpdateUser(int channel_id_, const IM::User& user_)
+{
+
+    auto it = m_mapChannels.find(channel_id_);
+    if (it != m_mapChannels.end())
+    {
+        int64_t user_id = user_.id();
+        auto user_it = find_if (it->second.m_users.begin(), it->second.m_users.end(),
+        [&] (IM::User& v_user_)
+        {
+            return v_user_.id() == user_id;
+        });
+
+
+        if (user_it != it->second.m_users.end())
+        {
+            user_it->set_id(user_.id());
+            user_it->set_name(user_.name());
+            user_it->set_nick_name(user_.nick_name());
+            user_it->set_sex(user_.sex());
+
+            return true;
+        }
+        else
+        {
+            // not find user id
+            return false;
+        }
+    }
+    else
+    {
+        // not find ch_id
+        return false;
+    }
+
+}
+
+
 
 
 

@@ -31,6 +31,7 @@ std::tuple<bool, int64_t> UserManager::remove(int conn_id_)
 
     if (it == m_users.end())
     {
+        cout << "Not find disconnid : " << conn_id_ << endl;
         return std::make_tuple(false, 0);
     }
 

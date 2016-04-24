@@ -7,6 +7,7 @@
 
 
 #include "channel_base_info.pb.h"
+#include "contacts.pb.h"
 
 class DBSvrConn: public Connection
 {
@@ -25,10 +26,16 @@ private:
     void handle_fetch_channels(pb_message_ptr);
     /// 加入频道返回
     void handle_join_channel(pb_message_ptr);
+    /// 退出频道返回
+    void handle_exit_channel(pb_message_ptr);
+    /// 读取频道用户信息返回
+    void handle_channel_user_update(pb_message_ptr);
+
 
 private:
     // 加载频道信息
     void LoadChannel();
+    void GetInstance(google::protobuf::Message*, IM::User&);
 
 private:
     MessageDispatcher m_dispatcher;

@@ -46,6 +46,12 @@ void ClientConn::on_connect()
     m_dispatcher.register_message_callback((int)C2M::JOIN_CHANNEL,
         bind(&ClientConn::handle_join_channel,          this, std::placeholders::_1));
 
+    m_dispatcher.register_message_callback((int)C2M::EXIT_CHANNEL,
+        bind(&ClientConn::handle_exit_channel,          this, std::placeholders::_1));
+
+    m_dispatcher.register_message_callback((int)C2M::CHANNEL_USER_UPDATE,
+        bind(&ClientConn::handle_channel_user_update,   this, std::placeholders::_1));
+
 
 
 
@@ -328,6 +334,56 @@ void ClientConn::handle_join_channel(pb_message_ptr p_msg_)
 
     CATCH
 
+}
+
+
+void ClientConn::handle_exit_channel(pb_message_ptr p_msg_)
+{
+    TRY
+
+
+    const Reflection* rf = p_msg_->GetReflection();
+
+    const FieldDescriptor* f_user_id    = p_msg_->GetDescriptor()->FindFieldByName("user_id");
+    const FieldDescriptor* f_channel_id = p_msg_->GetDescriptor()->FindFieldByName("channel_id");
+
+
+    assert(f_user_id    && f_user_id->type()    ==FieldDescriptor::TYPE_INT64);
+    assert(f_channel_id && f_channel_id->type() ==FieldDescriptor::TYPE_INT32);
+
+    CMsg packet;
+    packet.encode((int)M2D::EXIT_CHANNEL, *p_msg_);
+    send_to_db(packet);
+
+    CATCH
+
+}
+
+
+
+
+
+
+
+void ClientConn::handle_channel_user_update(pb_message_ptr p_msg_)
+{
+    TRY
+
+    const Reflection* rf = p_msg_->GetReflection();
+
+    const FieldDescriptor* f_user_id    = p_msg_->GetDescriptor()->FindFieldByName("user_id");
+    const FieldDescriptor* f_channel_id = p_msg_->GetDescriptor()->FindFieldByName("channel_id");
+
+
+    assert(f_user_id    && f_user_id->type()        ==FieldDescriptor::TYPE_INT64);
+    assert(f_channel_id && f_channel_id->type()     ==FieldDescriptor::TYPE_INT32);
+
+
+    CMsg packet;
+    packet.encode((int)M2D::CHANNEL_USER_UPDATE, *p_msg_);
+    send_to_db(packet);
+
+    CATCH
 }
 
 

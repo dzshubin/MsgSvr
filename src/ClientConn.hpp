@@ -30,7 +30,10 @@ private:
     void handle_fetch_contacts(pb_message_ptr);
     /// 玩家加入频道
     void handle_join_channel(pb_message_ptr);
-
+    /// 玩家离开频道
+    void handle_exit_channel(pb_message_ptr);
+    /// 请求频道里玩家信息
+    void handle_channel_user_update(pb_message_ptr);
 
 private:
     MessageDispatcher m_dispatcher;

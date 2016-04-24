@@ -52,8 +52,24 @@ enum class C2M
      *
      */
     JOIN_CHANNEL                    = 1003,
+    /*
+     *
+     * 请求离开某个频道
+     * @parm user_id    : 用户id
+     * @parm channel_id : 频道id
+     *
+     */
+    EXIT_CHANNEL                    = 1004,
 
 
+    /*
+     *
+     * 请求更新某个用户信息
+     * @parm user_id    : 用户id
+     * @parm channel_id : 频道id
+     *
+     */
+    CHANNEL_USER_UPDATE             = 1005,
 
 
     // 以下为服务器主动发给客户端的消息
@@ -126,6 +142,14 @@ enum class M2D
       * 请求加入频道
       */
      JOIN_CHANNEL                           = 5011,
+     /*
+      * 请求频道某个用户信息
+      */
+     CHANNEL_USER_UPDATE                    = 5012,
+     /*
+      * 请求离开频道
+      */
+     EXIT_CHANNEL                           = 5013,
 
 };
 
