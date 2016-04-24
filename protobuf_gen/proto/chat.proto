@@ -7,4 +7,5 @@ message ChatPkt
     int64 	recv_id 	= 2;	// 接受者id
     string 	content 	= 3;	// 聊天内容
     string	send_time	= 4;	// 发送时间
+    //int32	type		= 5;	// 聊天类型 1-单聊 2-群聊
 }
