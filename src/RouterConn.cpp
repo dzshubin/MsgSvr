@@ -35,10 +35,13 @@ void RouterConn::on_connect()
 
 
     m_dispatcher.register_message_callback((int)M2R::DISPATCH_CHAT,
-        bind(&RouterConn::handle_user_chat, this, std::placeholders::_1));
+        bind(&RouterConn::handle_user_chat,                     this, std::placeholders::_1));
+
+    m_dispatcher.register_message_callback((int)M2R::DISPATCH_CHANNEL_CHAT,
+        bind(&RouterConn::handle_channel_dispatch_chat,         this, std::placeholders::_1));
 
     m_dispatcher.register_message_callback((int)M2R::ALLOCATE_PORT,
-        bind(&RouterConn::handle_allocate_port, this, std::placeholders::_1));
+        bind(&RouterConn::handle_allocate_port,                 this, std::placeholders::_1));
 
 
 
@@ -114,14 +117,66 @@ void RouterConn::handle_allocate_port(pb_message_ptr p_msg_)
 }
 
 
+void RouterConn::handle_channel_dispatch_chat(pb_message_ptr p_msg_)
+{
+
+    TRY
+        auto descriptor = p_msg_->GetDescriptor();
+        const Reflection* rf = p_msg_->GetReflection();
+        const FieldDescriptor* f_send_id = descriptor->FindFieldByName("send_id");
+        const FieldDescriptor* f_recv_id = descriptor->FindFieldByName("recv_id");
+        const FieldDescriptor* f_content = descriptor->FindFieldByName("content");
+        const FieldDescriptor* f_send_tm = descriptor->FindFieldByName("send_time");
+        const FieldDescriptor* f_channel_id = descriptor->FindFieldByName("channel_id");
+
+        assert(f_send_id && f_send_id->type()==FieldDescriptor::TYPE_INT64);
+        assert(f_recv_id && f_recv_id->type()==FieldDescriptor::TYPE_INT64);
+        assert(f_content && f_content->type()==FieldDescriptor::TYPE_BYTES);
+        assert(f_send_tm && f_send_tm->type()==FieldDescriptor::TYPE_STRING);
+        assert(f_channel_id && f_channel_id->type()==FieldDescriptor::TYPE_INT32);
+
+
+        int64_t send_id = rf->GetInt64(*p_msg_, f_send_id);
+        int64_t recv_id = rf->GetInt64(*p_msg_, f_recv_id);
+        string  content = rf->GetString(*p_msg_, f_content);
+        string  send_tm = rf->GetString(*p_msg_, f_send_tm);
+        int32_t  channel_id = rf->GetInt32(*p_msg_, f_channel_id);
+
+
+        // 玩家在这个服务器？
+        ImUser* pImUser = UserManager::get_instance()->get_user(recv_id);
+        if (pImUser != nullptr)
+        {
+            // 找到链接
+            connection_ptr conn = pImUser->get_conn();
+            if (conn != nullptr)
+            {
+                CMsg packet;
+                packet.encode((int)C2M::CHANNEL_CHAT, *p_msg_);
+                send(packet, conn->socket());
+            }
+            else
+            {
+                cout << "error: " << __FUNCTION__ <<  "Recv User(" << recv_id << ") conn isn't exists!" << endl;
+            }
+        }
+        else
+        {
+            cout << "error: " << __FUNCTION__ << " Recv User(" << recv_id << ") isn't exists!" << endl;
+        }
+
+
+
+    CATCH
+
+}
+
+
+
 
 void RouterConn::handle_user_chat(pb_message_ptr p_msg_)
 {
-    try
-    {
-        GOOGLE_PROTOBUF_VERIFY_VERSION;
-        using namespace google::protobuf;
-
+    TRY
 
         auto descriptor = p_msg_->GetDescriptor();
         const Reflection* rf = p_msg_->GetReflection();
@@ -132,7 +187,7 @@ void RouterConn::handle_user_chat(pb_message_ptr p_msg_)
 
         assert(f_send_id && f_send_id->type()==FieldDescriptor::TYPE_INT64);
         assert(f_recv_id && f_recv_id->type()==FieldDescriptor::TYPE_INT64);
-        assert(f_content && f_content->type()==FieldDescriptor::TYPE_STRING);
+        assert(f_content && f_content->type()==FieldDescriptor::TYPE_BYTES);
         assert(f_send_tm && f_send_tm->type()==FieldDescriptor::TYPE_STRING);
 
 
@@ -141,10 +196,6 @@ void RouterConn::handle_user_chat(pb_message_ptr p_msg_)
         string  content = rf->GetString(*p_msg_, f_content);
         string  send_tm = rf->GetString(*p_msg_, f_send_tm);
 
-        cout << "chat sendid: " << send_id
-             << "chat recvid: " << recv_id
-             << "content: "     << content
-             << "send_time: "   << send_tm << endl;
 
 
 
@@ -170,16 +221,7 @@ void RouterConn::handle_user_chat(pb_message_ptr p_msg_)
         {
             cout << "error: " << __FUNCTION__ << " Recv User(" << recv_id << ") isn't exists!" << endl;
         }
-
-
-    }
-    catch (exception& e)
-    {
-        cout << "# ERR: exception in " << __FILE__;
-        cout << "(" << __FUNCTION__ << ") on line " << __LINE__ << endl;
-        cout << "# ERR: " << e.what() << endl;
-    }
-
+    CATCH
 
 }
 

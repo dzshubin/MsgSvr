@@ -1,6 +1,10 @@
 
 
 #include "ChannelManager.hpp"
+#include <algorithm>
+#include <iterator>
+
+
 
 ChannelManager::ChannelManager()
 {
@@ -195,6 +199,32 @@ bool ChannelManager::UpdateUser(int channel_id_, const IM::User& user_)
     }
 
 }
+
+
+bool ChannelManager::GetUserIds(int ch_id_, std::vector<int64_t>& vec_)
+{
+    auto it = m_mapChannels.find(ch_id_);
+    if (it != m_mapChannels.end())
+    {
+        std::for_each(it->second.m_users.begin(), it->second.m_users.end(),
+        [&] (const IM::User& user_)
+        {
+            vec_.push_back(user_.id());
+        });
+        return true;
+    }
+    else
+    {
+        //  not find ch_id
+        return false;
+    }
+
+
+
+
+
+}
+
 
 
 

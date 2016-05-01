@@ -41,6 +41,8 @@ public:
     void LoadChannelMembers(IM::ChannelMembersInfo&);
     // 更新频道信息
     bool UpdateUser(int, const IM::User&);
+    // 获得指定频道id的所有用户id
+    bool GetUserIds(int, std::vector<int64_t>&);
 
 private:
     ChannelManager();

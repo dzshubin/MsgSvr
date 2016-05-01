@@ -7,6 +7,8 @@
 #include "Connection.hpp"
 #include "CMsg.hpp"
 
+#include "MessageDispatcher.h"
+
 using namespace std;
 using namespace boost::asio;
 
@@ -20,7 +22,13 @@ public:
     virtual void on_disconnect() override;
 
 private:
+    void handle_lookup(pb_message_ptr);
+
+
+private:
     void register_msgsvr();
+private:
+    MessageDispatcher m_dispatcher;
 
 };
 

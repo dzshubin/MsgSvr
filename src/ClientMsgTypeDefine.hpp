@@ -71,11 +71,29 @@ enum class C2M
      */
     CHANNEL_USER_UPDATE             = 1005,
 
+    /*
+     *  群聊
+     * @parm send_id        : 发送者id
+     * @parm channel_id     : 频道id
+     * @parm content        : 发送内容
+     *
+     */
+    CHANNEL_CHAT                    = 1006,
+
+    /*
+     *  发送文件
+     */
+    FILE_TRANSLATION                = 1007,
+
+
 
     // 以下为服务器主动发给客户端的消息
     SEND_OFFLINE_MESSAGE            = 10000,
     SEND_CHANNELS                   = 10001,
     SEND_CHANNEL_MEMBERS            = 10002,
+    SEND_CHANNEL_MEMBER_JOIN        = 10003,
+    SEND_CHANNEL_MEMBER_EXIT        = 10004,
+    SEND_CHANNEL_OFFLINE_MESSAGE    = 10005,
 };
 
 
@@ -87,13 +105,10 @@ enum class M2R
     LOGIN                                   = 2001,
     LOGOUT                                  = 2002,
     ALLOCATE_PORT                           = 2003,
+    DISPATCH_CHANNEL_CHAT                   = 2004,
+
 };
 
-// routersvr --> msgsvr
-enum class R2M
-{
-    RECV_CHAT                               = 3000,
-};
 
 
 // 消息svr发给登陆SVr
@@ -101,6 +116,7 @@ enum class M2L
 {
     REGISTER                                = 7000,
     UPDATE                                  = 7001,     // 更新当前消息服务器总人数
+    LOOKUP                                  = 7002,     // 查询指定玩家是否已经登陆
 };
 
 
@@ -132,6 +148,15 @@ enum class M2D
       *  保存历史信息
       */
      SAVE_TO_HISTORY                        = 5003,
+
+     /*
+      *  保存频道聊天历史信息
+      */
+     SAVE_CHANNEL_HISTORY                   = 5004,
+
+     FETCH_CHANNEL_OFFLINE_MESSAGE          = 5005,
+
+
 
      /*
       * 请求频道信息

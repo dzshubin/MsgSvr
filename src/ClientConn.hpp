@@ -26,6 +26,8 @@ private:
     void handle_client_login(pb_message_ptr);
     /// 聊天
     void handle_chat(pb_message_ptr);
+    /// 频道聊天
+    void handle_channel_chat(pb_message_ptr);
     /// 拉取联系人信息
     void handle_fetch_contacts(pb_message_ptr);
     /// 玩家加入频道
@@ -34,6 +36,13 @@ private:
     void handle_exit_channel(pb_message_ptr);
     /// 请求频道里玩家信息
     void handle_channel_user_update(pb_message_ptr);
+    /// 发送文件
+    void handle_file_translation(pb_message_ptr);
+
+private:
+    ///
+    bool SendChannelChatToUser(int64_t, const google::protobuf::Message&);
+
 
 private:
     MessageDispatcher m_dispatcher;

@@ -22,6 +22,8 @@ private:
     void handle_fetch_info(pb_message_ptr );
     void handle_fetch_contacts(pb_message_ptr);
     void handle_fetch_offline_message(pb_message_ptr);
+    /// 加载频道离线消息返回
+    void handle_fetch_channel_offline_msg(pb_message_ptr);
     /// 加载频道返回
     void handle_fetch_channels(pb_message_ptr);
     /// 加入频道返回
@@ -36,6 +38,8 @@ private:
     // 加载频道信息
     void LoadChannel();
     void GetInstance(google::protobuf::Message*, IM::User&);
+    bool NotifyJoin(int ch_id_, const IM::User&);
+    bool NotifyExit(int ch_id_, int64_t user_id_);
 
 private:
     MessageDispatcher m_dispatcher;

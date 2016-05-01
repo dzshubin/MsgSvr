@@ -14,6 +14,9 @@
 #include "login.pb.h"
 #include "msg_update.pb.h"
 #include "channel.pb.h"
+#include "operate_req_base.pb.h"
+#include "channel_members.pb.h"
+
 
 
 #include <google/protobuf/message.h>
@@ -40,6 +43,9 @@ void DBSvrConn::on_connect()
 
     m_dispatcher.register_message_callback((int)M2D::FETCH_OFFLINE_MESSAGE,
         bind(&DBSvrConn::handle_fetch_offline_message,  this, std::placeholders::_1));
+
+    m_dispatcher.register_message_callback((int)M2D::FETCH_CHANNEL_OFFLINE_MESSAGE,
+        bind(&DBSvrConn::handle_fetch_channel_offline_msg,  this, std::placeholders::_1));
 
     m_dispatcher.register_message_callback((int)M2D::FETCH_CHANNELS,
         bind(&DBSvrConn::handle_fetch_channels,         this, std::placeholders::_1));
@@ -247,6 +253,49 @@ void DBSvrConn::handle_fetch_contacts(pb_message_ptr p_msg_)
 }
 
 
+void DBSvrConn::handle_fetch_channel_offline_msg(pb_message_ptr p_msg_)
+{
+
+    TRY
+
+    auto descriptor = p_msg_->GetDescriptor();
+    const Reflection* rf = p_msg_->GetReflection();
+    const FieldDescriptor* f_req_id = descriptor->FindFieldByName("req_id");
+    const FieldDescriptor* f_messages = descriptor->FindFieldByName("channel_messages");
+
+
+    assert(f_req_id   && f_req_id->type()==FieldDescriptor::TYPE_INT64);
+    assert(f_messages && f_messages->is_repeated());
+
+
+    int64_t req_id = rf->GetInt64(*p_msg_, f_req_id);
+
+    ImUser* pImUser = UserManager::get_instance()->get_user(req_id);
+    if (pImUser == nullptr)
+    {
+        cout << "error! pImuser is null! user_id: "<< req_id << endl;
+    }
+    else
+    {
+        CMsg packet;
+        packet.encode((int)C2M::SEND_CHANNEL_OFFLINE_MESSAGE, *p_msg_);
+        send(packet, pImUser->get_conn()->socket());
+
+
+        // 删除离线消息
+        // 保存为历史消息
+        CMsg history_req;
+        history_req.encode((int)M2D::SAVE_CHANNEL_HISTORY, *p_msg_);
+        send(history_req);
+    }
+
+
+    CATCH
+
+
+}
+
+
 
 void DBSvrConn::handle_fetch_offline_message(pb_message_ptr p_msg_)
 {
@@ -322,25 +371,29 @@ void DBSvrConn::handle_exit_channel(pb_message_ptr p_msg_)
 {
 
     TRY
-
-
     auto descriptor = p_msg_->GetDescriptor();
     const Reflection* rf = p_msg_->GetReflection();
-    const FieldDescriptor* f_user_id    = descriptor->FindFieldByName("user_id");
-    const FieldDescriptor* f_channel_id = descriptor->FindFieldByName("channel_id");
-    const FieldDescriptor* f_result     = descriptor->FindFieldByName("result");
+    const FieldDescriptor* f_req_base = descriptor->FindFieldByName("req_base");
+    const FieldDescriptor* f_result = descriptor->FindFieldByName("result");
 
 
-
-
-    assert(f_user_id    && f_user_id->type()    ==FieldDescriptor::TYPE_INT64);
+    assert(f_req_base   && f_req_base->type()   ==FieldDescriptor::TYPE_MESSAGE);
     assert(f_result     && f_result->type()     ==FieldDescriptor::TYPE_INT32);
-    assert(f_channel_id && f_channel_id->type() ==FieldDescriptor::TYPE_INT32);
 
 
-    int64_t req_id      = rf->GetInt64(*p_msg_, f_user_id);
-    int32_t channel_id  = rf->GetInt32(*p_msg_, f_channel_id);
+    google::protobuf::Message *pMessage = (rf->MutableMessage(&(*p_msg_), f_req_base));
+
+    const Reflection* p_message_rf = pMessage->GetReflection();
+    const FieldDescriptor* f_user_id = pMessage->GetDescriptor()->FindFieldByName("user_id");
+    const FieldDescriptor* f_channel_id = pMessage->GetDescriptor()->FindFieldByName("channel_id");
+
+    assert(f_user_id        && f_user_id->type()        ==FieldDescriptor::TYPE_INT64);
+    assert(f_channel_id     && f_channel_id->type()     ==FieldDescriptor::TYPE_INT32);
+
+    int64_t req_id      = p_message_rf->GetInt64(*pMessage, f_user_id);
+    int32_t channel_id  = p_message_rf->GetInt32(*pMessage, f_channel_id);
     int32_t result      = rf->GetInt32(*p_msg_, f_result);
+
 
 
     ImUser* pImUser = UserManager::get_instance()->get_user(req_id);
@@ -350,20 +403,23 @@ void DBSvrConn::handle_exit_channel(pb_message_ptr p_msg_)
     }
     else
     {
+        CMsg packet;
+        packet.encode((int)C2M::EXIT_CHANNEL, *p_msg_);
+        send(packet, pImUser->get_conn()->socket());
+
+
         if (result != 0)
         {
             // 修改内存
             ChannelManager::get_instance()->ExitChannel(channel_id, req_id);
+
+            // 通知群组的其他人人数变化
+            NotifyExit(channel_id, req_id);
         }
         else
         {
             // 数据库删除失败
         }
-
-
-        CMsg packet;
-        packet.encode((int)C2M::EXIT_CHANNEL, *p_msg_);
-        send(packet, pImUser->get_conn()->socket());
     }
 
 
@@ -379,20 +435,25 @@ void DBSvrConn::handle_join_channel(pb_message_ptr p_msg_)
 
     auto descriptor = p_msg_->GetDescriptor();
     const Reflection* rf = p_msg_->GetReflection();
-    const FieldDescriptor* f_user_id    = descriptor->FindFieldByName("user_id");
-    const FieldDescriptor* f_channel_id = descriptor->FindFieldByName("channel_id");
-    const FieldDescriptor* f_result     = descriptor->FindFieldByName("result");
+    const FieldDescriptor* f_req_base = descriptor->FindFieldByName("req_base");
+    const FieldDescriptor* f_result = descriptor->FindFieldByName("result");
 
 
-
-
-    assert(f_user_id    && f_user_id->type()    ==FieldDescriptor::TYPE_INT64);
+    assert(f_req_base   && f_req_base->type()   ==FieldDescriptor::TYPE_MESSAGE);
     assert(f_result     && f_result->type()     ==FieldDescriptor::TYPE_INT32);
-    assert(f_channel_id && f_channel_id->type() ==FieldDescriptor::TYPE_INT32);
 
 
-    int64_t req_id      = rf->GetInt64(*p_msg_, f_user_id);
-    int32_t channel_id  = rf->GetInt32(*p_msg_, f_channel_id);
+    google::protobuf::Message *pMessage = (rf->MutableMessage(&(*p_msg_), f_req_base));
+
+    const Reflection* p_message_rf = pMessage->GetReflection();
+    const FieldDescriptor* f_user_id = pMessage->GetDescriptor()->FindFieldByName("user_id");
+    const FieldDescriptor* f_channel_id = pMessage->GetDescriptor()->FindFieldByName("channel_id");
+
+    assert(f_user_id        && f_user_id->type()        ==FieldDescriptor::TYPE_INT64);
+    assert(f_channel_id     && f_channel_id->type()     ==FieldDescriptor::TYPE_INT32);
+
+    int64_t req_id      = p_message_rf->GetInt64(*pMessage, f_user_id);
+    int32_t channel_id  = p_message_rf->GetInt32(*pMessage, f_channel_id);
     int32_t result      = rf->GetInt32(*p_msg_, f_result);
 
 
@@ -403,7 +464,12 @@ void DBSvrConn::handle_join_channel(pb_message_ptr p_msg_)
     }
     else
     {
-        //cout << "join channel result: " << result << endl;
+        CMsg packet;
+        packet.encode((int)C2M::JOIN_CHANNEL, *p_msg_);
+        send(packet, pImUser->get_conn()->socket());
+
+
+
         if (result != 0)
         {
             // 修改内存
@@ -415,6 +481,10 @@ void DBSvrConn::handle_join_channel(pb_message_ptr p_msg_)
 
 
             ChannelManager::get_instance()->JoinChannel(channel_id, new_user);
+
+            // 通知群组的其他人人数变化
+            NotifyJoin(channel_id, new_user);
+
         }
         else
         {
@@ -422,9 +492,7 @@ void DBSvrConn::handle_join_channel(pb_message_ptr p_msg_)
         }
 
 
-        CMsg packet;
-        packet.encode((int)C2M::JOIN_CHANNEL, *p_msg_);
-        send(packet, pImUser->get_conn()->socket());
+
     }
 
 
@@ -442,31 +510,36 @@ void DBSvrConn::handle_channel_user_update(pb_message_ptr p_msg_)
     const Reflection* rf = p_msg_->GetReflection();
     const FieldDescriptor* f_user       = descriptor->FindFieldByName("user");
     const FieldDescriptor* f_channel_id = descriptor->FindFieldByName("channel_id");
-
+    const FieldDescriptor* f_req_id     = descriptor->FindFieldByName("req_id");
 
 
     assert(f_user       && f_user->type()       ==FieldDescriptor::TYPE_MESSAGE);
+    assert(f_req_id     && f_req_id->type()     ==FieldDescriptor::TYPE_INT64);
     assert(f_channel_id && f_channel_id->type() ==FieldDescriptor::TYPE_INT32);
 
 
 
     google::protobuf::Message *pMessage = (rf->MutableMessage(&(*p_msg_), f_user));
     int32_t channel_id  = rf->GetInt32(*p_msg_,  f_channel_id);
+    int64_t req_id      = rf->GetInt64(*p_msg_,  f_req_id);
+
 
     IM::User user;
     GetInstance(pMessage, user);
 
+    if (channel_id != 0)
+    {
+        // 更新内存
+        ChannelManager::get_instance()->UpdateUser(channel_id, user);
+    }
 
-    // 更新内存
-    ChannelManager::get_instance()->UpdateUser(channel_id, user);
 
-
-
-    ImUser* pImUser = UserManager::get_instance()->get_user(user.id());
+    ImUser* pImUser = UserManager::get_instance()->get_user(req_id);
     if (pImUser == nullptr)
     {
-        cout << "error! pImuser is null! user_id: "<< user.id() << endl;
+        cout << "error! pImuser is null! user_id: "<< req_id << endl;
     }
+    else
     {
 
         CMsg packet;
@@ -501,6 +574,87 @@ void DBSvrConn::LoadChannel()
 
     send_to_db(packet);
 }
+
+bool DBSvrConn::NotifyExit(int ch_id_, int64_t user_id_)
+{
+    vector<int64_t> vecIds;
+    if (ChannelManager::get_instance()->GetUserIds(ch_id_, vecIds))
+    {
+        for(int i = 0; i < vecIds.size(); i++)
+        {
+            if (user_id_ != vecIds[i])
+            {
+
+                ImUser* pImUser = UserManager::get_instance()->get_user(vecIds[i]);
+                if (pImUser == nullptr)
+                {
+                    cout << "error! pImuser is null! user_id: "<< vecIds[i] << endl;
+                }
+                else
+                {
+                    IM::OperateReqBase req_base;
+                    req_base.set_channel_id(ch_id_);
+                    req_base.set_user_id(user_id_);
+
+
+                    CMsg packet;
+                    packet.encode((int)C2M::SEND_CHANNEL_MEMBER_EXIT, req_base);
+                    send(packet, pImUser->get_conn()->socket());
+                }
+            }
+            else
+            {
+                continue;
+            }
+        }
+    }
+
+}
+
+
+
+
+bool DBSvrConn::NotifyJoin(int ch_id, const IM::User& user)
+{
+    vector<int64_t> vecIds;
+    if (ChannelManager::get_instance()->GetUserIds(ch_id, vecIds))
+    {
+        for(int i = 0; i < vecIds.size(); i++)
+        {
+            if (user.id() != vecIds[i])
+            {
+
+                ImUser* pImUser = UserManager::get_instance()->get_user(vecIds[i]);
+                if (pImUser == nullptr)
+                {
+                    cout << "error! pImuser is null! user_id: "<< vecIds[i] << endl;
+                }
+                else
+                {
+
+                    IM::ChannelMember new_member;
+                    new_member.set_channel_id(ch_id);
+
+                    IM::User* pUser = new_member.add_users();
+                    pUser->set_id(user.id());
+                    pUser->set_sex(user.sex());
+                    pUser->set_name(user.name());
+                    pUser->set_nick_name(user.nick_name());
+
+
+                    CMsg packet;
+                    packet.encode((int)C2M::SEND_CHANNEL_MEMBER_JOIN, new_member);
+                    send(packet, pImUser->get_conn()->socket());
+                }
+            }
+            else
+            {
+                continue;
+            }
+        }
+    }
+}
+
 
 
 void DBSvrConn::GetInstance(google::protobuf::Message* pMessage, IM::User& user)

@@ -22,6 +22,8 @@ public:
 
 private:
     void handle_user_chat(pb_message_ptr);
+    /// 频道聊天转发
+    void handle_channel_dispatch_chat(pb_message_ptr);
     void handle_allocate_port(pb_message_ptr);
 
 private:
