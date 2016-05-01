@@ -1,0 +1,9 @@
+
+syntax = "proto3";
+package IM;
+
+message LookUpRes
+{
+    int64 id = 1;	
+    int32 is_logined = 2;	// 是否已经登陆
+}
