@@ -1,0 +1,13 @@
+syntax="proto3";
+package IM;
+
+
+
+message FileTrans
+{
+    int64 	req_id		= 1;	// 请求者id
+    int64 	target_id	= 2;	// 目标用户id
+    string 	name		= 3;	// 文件名字
+    bytes	data		= 4;	// 文件数据
+
+}
