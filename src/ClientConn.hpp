@@ -38,6 +38,10 @@ private:
     void handle_channel_user_update(pb_message_ptr);
     /// 发送文件
     void handle_file_translation(pb_message_ptr);
+    /// 读取用户历史消息
+    void handle_fetch_history(pb_message_ptr);
+    /// 读取频道历史消息
+    void handle_fetch_channel_history(pb_message_ptr);
 
 private:
     ///

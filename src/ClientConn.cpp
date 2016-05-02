@@ -58,9 +58,11 @@ void ClientConn::on_connect()
     m_dispatcher.register_message_callback((int)C2M::FILE_TRANSLATION,
         bind(&ClientConn::handle_file_translation,      this, std::placeholders::_1));
 
+    m_dispatcher.register_message_callback((int)C2M::FETCH_HISTORY,
+        bind(&ClientConn::handle_fetch_history,         this, std::placeholders::_1));
 
-
-
+    m_dispatcher.register_message_callback((int)C2M::FETCH_CHANNEL_HISTORY,
+        bind(&ClientConn::handle_fetch_channel_history, this, std::placeholders::_1));
 
     // 开始从客户端读取消息
     read_head();
@@ -200,9 +202,12 @@ void ClientConn::handle_channel_chat(pb_message_ptr p_msg_)
         const FieldDescriptor* f_content    = descriptor->FindFieldByName("content");
         const FieldDescriptor* f_recv_id    = descriptor->FindFieldByName("recv_id");
         const FieldDescriptor* f_send_tm    = descriptor->FindFieldByName("send_time");
+        const FieldDescriptor* f_send_nm    = descriptor->FindFieldByName("send_name");
+
 
         assert(f_send_id && f_send_id->type()==FieldDescriptor::TYPE_INT64);
         assert(f_content && f_content->type()==FieldDescriptor::TYPE_BYTES);
+        assert(f_send_nm && f_send_nm->type()==FieldDescriptor::TYPE_STRING);
         assert(f_channel_id && f_channel_id->type()==FieldDescriptor::TYPE_INT32);
 
 
@@ -212,6 +217,18 @@ void ClientConn::handle_channel_chat(pb_message_ptr p_msg_)
 
 
         string strCurrTime = get_cur_time();
+
+
+        ImUser* pUser = UserManager::get_instance()->get_user(send_id);
+        if (pUser == nullptr)
+        {
+            cout << "fatal error！" <<endl;
+            return;
+        }
+
+        string send_name = pUser->get_nick_name();
+
+
 
 
         //发送给所有的群组成员
@@ -237,7 +254,7 @@ void ClientConn::handle_channel_chat(pb_message_ptr p_msg_)
 
             rf->SetInt64(&(*p_msg_), f_recv_id, recv_id);
             rf->SetString(&(*p_msg_), f_send_tm, strCurrTime);
-
+            rf->SetString(&(*p_msg_), f_send_nm, send_name);
 
             // 玩家在服务器里？
             ImUser* pImUser = UserManager::get_instance()->get_user(recv_id);
@@ -259,6 +276,7 @@ void ClientConn::handle_channel_chat(pb_message_ptr p_msg_)
                     pchat->set_channel_id(channel_id);
                     pchat->set_content(content);
                     pchat->set_send_time(strCurrTime);
+                    pchat->set_send_name(send_name);
                 }
                 else
                 {
@@ -277,6 +295,7 @@ void ClientConn::handle_channel_chat(pb_message_ptr p_msg_)
                 pChat->set_channel_id(channel_id);
                 pChat->set_content(content);
                 pChat->set_send_time(strCurrTime);
+                pChat->set_send_name(send_name);
             }
 
         }
@@ -316,10 +335,11 @@ void ClientConn::handle_chat(pb_message_ptr p_msg_)
         const FieldDescriptor* f_send_id = descriptor->FindFieldByName("send_id");
         const FieldDescriptor* f_recv_id = descriptor->FindFieldByName("recv_id");
         const FieldDescriptor* f_content = descriptor->FindFieldByName("content");
-
+        const FieldDescriptor* f_send_nm = descriptor->FindFieldByName("send_name");
 
         assert(f_send_id && f_send_id->type()==FieldDescriptor::TYPE_INT64);
         assert(f_recv_id && f_recv_id->type()==FieldDescriptor::TYPE_INT64);
+        assert(f_send_nm && f_send_nm->type()==FieldDescriptor::TYPE_STRING);
         assert(f_content && f_content->type()==FieldDescriptor::TYPE_BYTES);
 
 
@@ -327,6 +347,7 @@ void ClientConn::handle_chat(pb_message_ptr p_msg_)
         int64_t send_id = rf->GetInt64(*p_msg_, f_send_id);
         int64_t recv_id = rf->GetInt64(*p_msg_, f_recv_id);
         string  content = rf->GetString(*p_msg_, f_content);
+        string  send_nm = rf->GetString(*p_msg_, f_send_nm);
 
 
         CMsg packet;
@@ -336,8 +357,7 @@ void ClientConn::handle_chat(pb_message_ptr p_msg_)
         chat.set_content(content);
         // 设置发送时间
         chat.set_send_time(get_cur_time().c_str());
-
-
+        chat.set_send_name(send_nm);
 
 
         // 玩家在服务器里？
@@ -355,14 +375,14 @@ void ClientConn::handle_chat(pb_message_ptr p_msg_)
 
                 IM::ChatPkt* pChatPkt =  msg_cach.add_chat_message();
                 pChatPkt->set_send_id(send_id);
+                pChatPkt->set_recv_id(recv_id);
                 pChatPkt->set_content(chat.content());
                 pChatPkt->set_send_time(chat.send_time());
-
+                pChatPkt->set_send_name(send_nm);
 
                 // 发送聊天消息
                 packet.encode((int)C2M::CHAT, chat);
                 send(packet, conn->socket());
-
 
 
                 CMsg history_pkt;
@@ -481,6 +501,55 @@ void ClientConn::handle_exit_channel(pb_message_ptr p_msg_)
     CATCH
 
 }
+
+
+void ClientConn::handle_fetch_channel_history(pb_message_ptr p_msg_)
+{
+
+    TRY
+    const Reflection* rf = p_msg_->GetReflection();
+
+    const FieldDescriptor* f_user_id     = p_msg_->GetDescriptor()->FindFieldByName("user_id");
+    const FieldDescriptor* f_channel_id  = p_msg_->GetDescriptor()->FindFieldByName("channel_id");
+
+
+    assert(f_user_id         && f_user_id->type()         ==FieldDescriptor::TYPE_INT64);
+    assert(f_channel_id      && f_channel_id->type()      ==FieldDescriptor::TYPE_INT32);
+
+
+    CMsg packet;
+    packet.encode((int)M2D::FETCH_CHANNEL_HISTORY, *p_msg_);
+    send_to_db(packet);
+
+    CATCH
+
+
+}
+
+
+void ClientConn::handle_fetch_history(pb_message_ptr p_msg_)
+{
+
+    TRY
+    const Reflection* rf = p_msg_->GetReflection();
+
+    const FieldDescriptor* f_req_id     = p_msg_->GetDescriptor()->FindFieldByName("req_id");
+    const FieldDescriptor* f_target_id  = p_msg_->GetDescriptor()->FindFieldByName("target_id");
+
+
+    assert(f_req_id         && f_req_id->type()         ==FieldDescriptor::TYPE_INT64);
+    assert(f_target_id      && f_target_id->type()      ==FieldDescriptor::TYPE_INT64);
+
+
+    CMsg packet;
+    packet.encode((int)M2D::FETCH_HISTORY, *p_msg_);
+    send_to_db(packet);
+
+    CATCH
+
+
+}
+
 
 
 void ClientConn::handle_file_translation(pb_message_ptr p_msg_)

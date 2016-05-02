@@ -32,7 +32,10 @@ private:
     void handle_exit_channel(pb_message_ptr);
     /// 读取频道用户信息返回
     void handle_channel_user_update(pb_message_ptr);
-
+    /// 读取用户历史消息返回
+    void handle_fetch_history(pb_message_ptr);
+    /// 读取频道历史消息返回
+    void handle_fetch_channel_history(pb_message_ptr);
 
 private:
     // 加载频道信息

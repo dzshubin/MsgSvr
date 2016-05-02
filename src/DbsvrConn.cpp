@@ -59,6 +59,11 @@ void DBSvrConn::on_connect()
     m_dispatcher.register_message_callback((int)M2D::CHANNEL_USER_UPDATE,
         bind(&DBSvrConn::handle_channel_user_update,    this, std::placeholders::_1));
 
+    m_dispatcher.register_message_callback((int)M2D::FETCH_HISTORY,
+        bind(&DBSvrConn::handle_fetch_history,          this, std::placeholders::_1));
+
+    m_dispatcher.register_message_callback((int)M2D::FETCH_CHANNEL_HISTORY,
+        bind(&DBSvrConn::handle_fetch_channel_history,  this, std::placeholders::_1));
 
 
 
@@ -499,6 +504,90 @@ void DBSvrConn::handle_join_channel(pb_message_ptr p_msg_)
     CATCH
 
 }
+
+
+void DBSvrConn::handle_fetch_history(pb_message_ptr p_msg_)
+{
+    TRY
+    auto descriptor = p_msg_->GetDescriptor();
+    const Reflection* rf = p_msg_->GetReflection();
+    const FieldDescriptor* f_req_id     = descriptor->FindFieldByName("req_id");
+
+
+    assert(f_req_id && f_req_id->type() ==FieldDescriptor::TYPE_INT64);
+
+
+    int64_t req_id      = rf->GetInt64(*p_msg_,  f_req_id);
+
+
+    ImUser* pImUser = UserManager::get_instance()->get_user(req_id);
+    if (pImUser == nullptr)
+    {
+        cout << "error! pImuser is null! user_id: "<< req_id << endl;
+    }
+    else
+    {
+
+        CMsg packet;
+        packet.encode((int)C2M::FETCH_HISTORY, *p_msg_);
+        send(packet, pImUser->get_conn()->socket());
+    }
+    CATCH
+
+}
+
+
+
+
+void DBSvrConn::handle_fetch_channel_history(pb_message_ptr p_msg_)
+{
+    TRY
+    auto descriptor = p_msg_->GetDescriptor();
+    const Reflection* rf = p_msg_->GetReflection();
+    const FieldDescriptor* f_req_id     = descriptor->FindFieldByName("req_id");
+
+
+    assert(f_req_id && f_req_id->type() ==FieldDescriptor::TYPE_INT64);
+
+
+    int64_t req_id      = rf->GetInt64(*p_msg_,  f_req_id);
+
+
+    ImUser* pImUser = UserManager::get_instance()->get_user(req_id);
+    if (pImUser == nullptr)
+    {
+        cout << "error! pImuser is null! user_id: "<< req_id << endl;
+    }
+    else
+    {
+
+        CMsg packet;
+        packet.encode((int)C2M::FETCH_CHANNEL_HISTORY, *p_msg_);
+        send(packet, pImUser->get_conn()->socket());
+    }
+    CATCH
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

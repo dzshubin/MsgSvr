@@ -85,6 +85,9 @@ enum class C2M
      */
     FILE_TRANSLATION                = 1007,
 
+    // 读取频道/用户的历史消息
+    FETCH_HISTORY                   = 1008,
+    FETCH_CHANNEL_HISTORY           = 1009,
 
 
     // 以下为服务器主动发给客户端的消息
@@ -171,10 +174,19 @@ enum class M2D
       * 请求频道某个用户信息
       */
      CHANNEL_USER_UPDATE                    = 5012,
+
      /*
       * 请求离开频道
       */
      EXIT_CHANNEL                           = 5013,
+
+
+     FETCH_HISTORY                          = 5014,
+     /*
+      * 请求频道历史消息
+      */
+     FETCH_CHANNEL_HISTORY                  = 5015,
+
 
 };
 
